@@ -16,91 +16,91 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VoxyRoom implements IVoxyRoom, IEventListener {
-    private final VoxyServer server;
-    private final VocalServer vocalServer;
-    private final Map<String, IVoxyPlayer> players;
-    private String name;
+	private final VoxyServer server;
+	private final VocalServer vocalServer;
+	private final Map<String, IVoxyPlayer> players;
+	private String name;
 
-    /***
-     * Creates a room where players can speak together.
-     *
-     * @param server The server on which this room is created.
-     * @param name The room name.
-     */
-    public VoxyRoom(VoxyServer server, String name) {
-        this.server = server;
-        this.name = name;
+	/***
+	 * Creates a room where players can speak together.
+	 *
+	 * @param server The server on which this room is created.
+	 * @param name   The room name.
+	 */
+	public VoxyRoom(VoxyServer server, String name) {
+		this.server = server;
+		this.name = name;
 
-        players = new HashMap<String, IVoxyPlayer>();
-        vocalServer = new VocalServer(this);
-        vocalServer.open();
+		players = new HashMap<String, IVoxyPlayer>();
+		vocalServer = new VocalServer(this);
+		vocalServer.open();
 
-        EventManager.registerListener(this);
-    }
+		EventManager.registerListener(this);
+	}
 
-    @Override
-    public IVoxyServer getServer() {
-        return server;
-    }
+	@Override
+	public IVoxyServer getServer() {
+		return server;
+	}
 
-    @Override
-    public String getName() {
-        return name;
-    }
+	@Override
+	public String getName() {
+		return name;
+	}
 
-    @Override
-    public void setName(String name) {
-        RenameRoomPrevent preEvent = new RenameRoomPrevent(this, name);
-        RenameRoomPostEvent postEvent = new RenameRoomPostEvent(this, this.name);
-        Runnable exe = () -> {
-            info("Room %s has been renamed as %s", this.name, name);
-            this.name = name;
-        };
+	@Override
+	public void setName(String name) {
+		RenameRoomPrevent preEvent = new RenameRoomPrevent(this, name);
+		RenameRoomPostEvent postEvent = new RenameRoomPostEvent(this, this.name);
+		Runnable exe = () -> {
+			info("Room %s has been renamed as %s", this.name, name);
+			this.name = name;
+		};
 
-        EventManager.callEvent(preEvent, exe, postEvent);
-    }
+		EventManager.callEvent(preEvent, exe, postEvent);
+	}
 
-    @Override
-    public Map<String, IVoxyPlayer> getPlayers() {
-        return Collections.unmodifiableMap(players);
-    }
+	@Override
+	public Map<String, IVoxyPlayer> getPlayers() {
+		return Collections.unmodifiableMap(players);
+	}
 
-    @Override
-    public void add(IVoxyPlayer player) {
+	@Override
+	public void add(IVoxyPlayer player) {
 
-    }
+	}
 
-    @Override
-    public void remove(IVoxyPlayer player) {
+	@Override
+	public void remove(IVoxyPlayer player) {
 
-    }
+	}
 
-    @Override
-    public int getPort() {
-        return vocalServer.getPort();
-    }
+	@Override
+	public int getPort() {
+		return vocalServer.getPort();
+	}
 
-    @Override
-    public String toString() {
-        return name;
-    }
+	@Override
+	public String toString() {
+		return name;
+	}
 
-    @EventHandler
-    private void onRoomRemoved(RemoveRoomPostEvent event) {
-        if (event.getRoom() != this)
-            return;
+	@EventHandler
+	private void onRoomRemoved(RemoveRoomPostEvent event) {
+		if (event.getRoom() != this)
+			return;
 
-        vocalServer.close();
-        vocalServer.dispose();
-    }
+		vocalServer.close();
+		vocalServer.dispose();
+	}
 
-    /**
-     * Creates a LogEvent with log level INFO and the given formatted text.
-     *
-     * @param format The formatter if the message to display has arguments.
-     * @param args   The arguments of the message to display.
-     */
-    private void info(String format, Object... args) {
-        Logger.info("%s %s", getServer(), String.format(format, args));
-    }
+	/**
+	 * Creates a LogEvent with log level INFO and the given formatted text.
+	 *
+	 * @param format The formatter if the message to display has arguments.
+	 * @param args   The arguments of the message to display.
+	 */
+	private void info(String format, Object... args) {
+		Logger.info("%s %s", getServer(), String.format(format, args));
+	}
 }
