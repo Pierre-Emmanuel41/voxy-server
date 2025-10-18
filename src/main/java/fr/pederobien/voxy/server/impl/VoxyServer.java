@@ -1,5 +1,13 @@
 package fr.pederobien.voxy.server.impl;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import fr.pederobien.communication.impl.EthernetEndPoint;
 import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.interfaces.IEthernetEndPoint;
@@ -13,13 +21,14 @@ import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
-import fr.pederobien.voxy.server.event.*;
+import fr.pederobien.voxy.server.event.AddRoomPostEvent;
+import fr.pederobien.voxy.server.event.AddRoomPreEvent;
+import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
+import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
+import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
-
-import java.util.*;
-import java.util.function.Consumer;
 
 public class VoxyServer implements IVoxyServer, IEventListener {
 	private final ProtocolServerConfig<IEthernetEndPoint> config;
@@ -149,7 +158,13 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 					client.dispose();
 			};
 
-			client.initialize(callback);
+			// Adding delay to let the client be ready to handle server's initialization sequence
+			try {
+				Thread.sleep(500);
+				client.initialize(callback);
+			} catch (Exception e) {
+				// Do nothing
+			}
 		}
 	}
 

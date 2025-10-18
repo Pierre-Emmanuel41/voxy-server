@@ -1,9 +1,9 @@
 package fr.pederobien.voxy.server.event;
 
+import java.util.StringJoiner;
+
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
-
-import java.util.StringJoiner;
 
 public class AddRoomPostEvent extends VoxyServerEvent {
 	private final IVoxyRoom room;

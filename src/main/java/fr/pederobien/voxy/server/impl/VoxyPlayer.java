@@ -48,4 +48,18 @@ public class VoxyPlayer implements IVoxyPlayer {
 	public boolean isDeaf() {
 		return isDeaf;
 	}
+
+	@Override
+	public String toString() {
+		return name;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof VoxyPlayer))
+			return false;
+
+		VoxyPlayer other = (VoxyPlayer) obj;
+		return name.equals(other.getName());
+	}
 }

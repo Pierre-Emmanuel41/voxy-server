@@ -1,9 +1,9 @@
 package fr.pederobien.voxy.server.event;
 
+import java.util.StringJoiner;
+
 import fr.pederobien.utils.ICancellable;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
-
-import java.util.StringJoiner;
 
 public class AddRoomPreEvent extends VoxyServerEvent implements ICancellable {
 	private final String name;
@@ -43,6 +43,6 @@ public class AddRoomPreEvent extends VoxyServerEvent implements ICancellable {
 		StringJoiner joiner = new StringJoiner(",", "{", "}");
 		joiner.add("server=" + getServer());
 		joiner.add("name=" + getName());
-		return String.format("%s_%s", getName(), joiner);
+		return String.format("%s_%s", super.getName(), joiner);
 	}
 }
