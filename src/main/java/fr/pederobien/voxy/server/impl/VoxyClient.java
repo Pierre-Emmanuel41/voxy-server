@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import fr.pederobien.messenger.event.ProtocolConnectionLostEvent;
 import fr.pederobien.messenger.interfaces.IProtocolConnection;
 import fr.pederobien.messenger.interfaces.IRequestMessage;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;
@@ -138,6 +139,23 @@ public class VoxyClient extends ClientWrapper implements IEventListener {
 		// Notifying the remote a player left a room
 		LeaveRoomRequest request = new LeaveRoomRequest(event.getRoom().getName(), event.getPlayer().getName());
 		send(getRequest(VoxyIdentifiers.LEAVE_ROOM, request));
+	}
+
+	@EventHandler
+	private void onConnectionLost(ProtocolConnectionLostEvent event) {
+		if (event.getConnection() != getClient().getConnection())
+			return;
+
+		info("%s - Connection lost with %s", server, player.getName());
+
+		// Unregistering from events
+		EventManager.unregisterListener(this);
+
+		debug("Notifying each room to remove player %s", player.getName());
+
+		// Removing the player from room if registered in a room
+		for (IVoxyRoom room : server.getRooms().values())
+			room.remove(player.getName());
 	}
 
 	/**
