@@ -7,15 +7,13 @@ import java.util.function.Consumer;
 import fr.pederobien.messenger.interfaces.IProtocolConnection;
 import fr.pederobien.messenger.interfaces.IRequestMessage;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;
-import fr.pederobien.protocol.interfaces.IError;
-import fr.pederobien.protocol.interfaces.IIdentifier;
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
-import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
+import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.RenameRoomRequest;
@@ -23,14 +21,14 @@ import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest.PlayerInfo;
 import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest.RoomInfo;
 import fr.pederobien.voxy.server.event.AddRoomPostEvent;
+import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
-public class VoxyClient implements IEventListener {
+public class VoxyClient extends ClientWrapper implements IEventListener {
 	private final VoxyServer server;
-	private final IProtocolClient client;
 	private VoxyPlayer player;
 
 	/***
@@ -40,14 +38,15 @@ public class VoxyClient implements IEventListener {
 	 * @param client The client that gather requests that can be sent to the remote.
 	 */
 	public VoxyClient(VoxyServer server, IProtocolClient client) {
+		super(client);
 		this.server = server;
-		this.client = client;
 
 		// Registering event handler
 		client.addRequestHandler(VoxyIdentifiers.SERVER_PROPERTIES, this::onServerPropertiesRequest);
 		client.addRequestHandler(VoxyIdentifiers.ADD_ROOM, this::onAddRoomRequest);
 		client.addRequestHandler(VoxyIdentifiers.REMOVE_ROOM, this::onRemoveRoomRequest);
 		client.addRequestHandler(VoxyIdentifiers.RENAME_ROOM, this::onRenameRoomRequest);
+		client.addRequestHandler(VoxyIdentifiers.JOIN_ROOM, this::onJoinRoomRequest);
 	}
 
 	/**
@@ -79,11 +78,16 @@ public class VoxyClient implements IEventListener {
 		send(request);
 	}
 
+	@Override
+	public String toString() {
+		return getClient().toString();
+	}
+
 	/**
 	 * Close definitely this client, it cannot be reused to send or received data with the remote.
 	 */
 	public void dispose() {
-		client.dispose();
+		getClient().dispose();
 	}
 
 	@EventHandler
@@ -111,6 +115,15 @@ public class VoxyClient implements IEventListener {
 
 		// Notifying the remote that a room has been renamed
 		send(getRequest(VoxyIdentifiers.RENAME_ROOM, new RenameRoomRequest(event.getOldName(), event.getRoom().getName())));
+	}
+
+	@EventHandler
+	private void onPlayerJoinedRoom(JoinRoomPostEvent event) {
+		if (event.getRoom().getServer() != server)
+			return;
+
+		JoinRoomRequest request = new JoinRoomRequest(event.getRoom().getName(), event.getPlayer().getName(), event.getPlayer().isMute(), event.getPlayer().isDeaf());
+		send(getRequest(VoxyIdentifiers.JOIN_ROOM, request));
 	}
 
 	/**
@@ -181,12 +194,12 @@ public class VoxyClient implements IEventListener {
 
 		debug("%s - Sent a request to add room %s", player, request.getName());
 		if (server.getRooms().get(request.getName()) != null) {
-			debug("%s - Denying request to add room %s, it already exist", server, request.getName());
+			debug("%s - Denying request to add room %s, it already exists", server, request.getName());
 			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_ALREADY_REGISTERED, null));
 			return;
 		}
 
-		debug("%s - Accepting request to add room %s", request.getName());
+		debug("%s - Accepting request to add room %s", server, request.getName());
 		answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
 		server.add(request.getName());
 	}
@@ -245,81 +258,38 @@ public class VoxyClient implements IEventListener {
 	}
 
 	/**
-	 * Creates a request associated to the given identifier, if supported by at least one protocol, and set its error code and
-	 * payload.
-	 *
-	 * @param identifier The request identifier.
-	 * @param error      The request error.
-	 * @param payload    The request payload.
-	 * @return The request ready to be sent to the server or null if the identifier is not supported.
+	 * Event handler: Method called when the client requests to join a room on the server.
+	 * 
+	 * @param connection The connection with the client.
+	 * @param messageID  The client's message identifier.
+	 * @param payload    The object that gather properties about the room to join.
 	 */
-	private IRequestMessage getRequest(IIdentifier identifier, IError error, Object payload) {
-		return client.getRequest(identifier, error, payload);
-	}
+	private void onJoinRoomRequest(IProtocolConnection connection, int messageID, Object payload) {
+		if (!(payload instanceof JoinRoomRequest request))
+			return;
 
-	/**
-	 * Creates a request associated to the given identifier, if supported by at least one protocol, and set its error code and
-	 * payload.
-	 *
-	 * @param identifier The request identifier.
-	 * @param payload    The request payload.
-	 * @return The request ready to be sent to the server or null if the identifier is not supported.
-	 */
-	private IRequestMessage getRequest(IIdentifier identifier, Object payload) {
-		return getRequest(identifier, VoxyErrors.NO_ERROR, payload);
-	}
-
-	/**
-	 * Send the given request to the remote.
-	 *
-	 * @param request The request to send to the remote.
-	 */
-	private void send(IRequestMessage request) {
-		client.getConnection().send(request);
-	}
-
-	/**
-	 * Send the given request to the remote.
-	 *
-	 * @param messageID The identifier of the message received from the remote.
-	 * @param request   The request to send to the remote.
-	 */
-	private void answer(int messageID, IRequestMessage request) {
-		client.getConnection().answer(messageID, request);
-	}
-
-	/**
-	 * Parse the given bytes array to get the payload.
-	 *
-	 * @param data The raw bytes array to parse.
-	 * @return The payload parsed, or null if a ClassCastException occurred.
-	 */
-	@SuppressWarnings("unchecked")
-	private <T> T parse(byte[] data) {
-		try {
-			return (T) client.parse(data).getPayload();
-		} catch (ClassCastException e) {
-			return null;
+		debug("%s - Sent a request to join room %s", player, request.getRoomName());
+		if (!request.getPlayerName().equals(player.getName())) {
+			debug("%s - Denying the request to join room %s, the player's name is wrong", server, request.getPlayerName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			return;
 		}
-	}
 
-	/**
-	 * Print a log using INFO level
-	 *
-	 * @param message The message to print.
-	 * @param args    The arguments of the message.
-	 */
-	protected void info(String message, Object... args) {
-		Logger.info(String.format(message, args));
-	}
+		IVoxyRoom room = server.getRooms().get(request.getRoomName());
+		if (room == null) {
+			debug("%s - Denying request to join room %s, it does not exist", server, request.getRoomName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_DOES_NOT_EXIST, null));
+			return;
+		}
 
-	/**
-	 * Print a log using DEBUG level.
-	 *
-	 * @param message The message to print.
-	 * @param args    The arguments of the message.
-	 */
-	private void debug(String format, Object... args) {
-		Logger.debug(String.format(format, args));
+		if (room.getPlayers().get(request.getPlayerName()) != null) {
+			debug("%s - Denying request to join room %s, the player is already registered", server, request.getRoomName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_ALREADY_REGISTERED, null));
+			return;
+		}
+
+		debug("%s - Accepting request to join room %s", server, request.getRoomName());
+		answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
+		room.add(player);
 	}
 }

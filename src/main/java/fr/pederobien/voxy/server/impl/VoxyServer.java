@@ -154,8 +154,10 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 					clients.add(client);
 					info("Player %s joined the server", client.getPlayer().getName());
 					players.put(client.getPlayer().getName(), client.getPlayer());
-				} else
+				} else {
+					info("Failure to initialize connection with client %s, disposing connection", client);
 					client.dispose();
+				}
 			};
 
 			// Adding delay to let the client be ready to handle server's initialization sequence
