@@ -10,6 +10,8 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
+import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
+import fr.pederobien.voxy.server.event.LeaveRoomPreEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPrevent;
@@ -72,6 +74,11 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 
 	@Override
 	public void add(IVoxyPlayer player) {
+		synchronized (lock) {
+			if (players.get(player.getName()) != null)
+				return;
+		}
+
 		JoinRoomPreEvent preEvent = new JoinRoomPreEvent(this, player);
 		JoinRoomPostEvent postEvent = new JoinRoomPostEvent(this, player);
 		Runnable exe = () -> {
@@ -85,8 +92,23 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 	}
 
 	@Override
-	public void remove(IVoxyPlayer player) {
+	public void remove(String name) {
+		IVoxyPlayer player;
+		synchronized (lock) {
+			if ((player = players.get(name)) == null)
+				return;
+		}
 
+		LeaveRoomPreEvent preEvent = new LeaveRoomPreEvent(this, player);
+		LeaveRoomPostEvent postEvent = new LeaveRoomPostEvent(this, player);
+		Runnable exe = () -> {
+			info("Player %s left room %s", player.getName(), name);
+			synchronized (lock) {
+				players.remove(player.getName());
+			}
+		};
+
+		EventManager.callEvent(preEvent, exe, postEvent);
 	}
 
 	@Override

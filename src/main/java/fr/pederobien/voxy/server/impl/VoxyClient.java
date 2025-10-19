@@ -14,6 +14,7 @@ import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
+import fr.pederobien.voxy.common.impl.requests.LeaveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.RenameRoomRequest;
@@ -22,6 +23,7 @@ import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest.PlayerInf
 import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest.RoomInfo;
 import fr.pederobien.voxy.server.event.AddRoomPostEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
+import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
@@ -47,6 +49,7 @@ public class VoxyClient extends ClientWrapper implements IEventListener {
 		client.addRequestHandler(VoxyIdentifiers.REMOVE_ROOM, this::onRemoveRoomRequest);
 		client.addRequestHandler(VoxyIdentifiers.RENAME_ROOM, this::onRenameRoomRequest);
 		client.addRequestHandler(VoxyIdentifiers.JOIN_ROOM, this::onJoinRoomRequest);
+		client.addRequestHandler(VoxyIdentifiers.LEAVE_ROOM, this::onLeaveRoomRequest);
 	}
 
 	/**
@@ -122,8 +125,19 @@ public class VoxyClient extends ClientWrapper implements IEventListener {
 		if (event.getRoom().getServer() != server)
 			return;
 
+		// Notifying the remote a player joined a room
 		JoinRoomRequest request = new JoinRoomRequest(event.getRoom().getName(), event.getPlayer().getName(), event.getPlayer().isMute(), event.getPlayer().isDeaf());
 		send(getRequest(VoxyIdentifiers.JOIN_ROOM, request));
+	}
+
+	@EventHandler
+	private void onPlayerLeftRoom(LeaveRoomPostEvent event) {
+		if (event.getRoom().getServer() != server)
+			return;
+
+		// Notifying the remote a player left a room
+		LeaveRoomRequest request = new LeaveRoomRequest(event.getRoom().getName(), event.getPlayer().getName());
+		send(getRequest(VoxyIdentifiers.LEAVE_ROOM, request));
 	}
 
 	/**
@@ -288,8 +302,48 @@ public class VoxyClient extends ClientWrapper implements IEventListener {
 			return;
 		}
 
+		// Checking if player is already registered
+		for (IVoxyRoom toCheck : server.getRooms().values())
+			toCheck.remove(request.getPlayerName());
+
 		debug("%s - Accepting request to join room %s", server, request.getRoomName());
 		answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
 		room.add(player);
+	}
+
+	/**
+	 * Event handler: Method called when the client requests to join a room on the server.
+	 * 
+	 * @param connection The connection with the client.
+	 * @param messageID  The client's message identifier.
+	 * @param payload    The object that gather properties about the room to join.
+	 */
+	private void onLeaveRoomRequest(IProtocolConnection connection, int messageID, Object payload) {
+		if (!(payload instanceof LeaveRoomRequest request))
+			return;
+
+		debug("%s - Sent a request to leave room %s", player, request.getRoomName());
+		if (!request.getPlayerName().equals(player.getName())) {
+			debug("%s - Denying the request to leave room %s, the player's name is wrong", server, request.getPlayerName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			return;
+		}
+
+		IVoxyRoom room = server.getRooms().get(request.getRoomName());
+		if (room == null) {
+			debug("%s - Denying request to leave room %s, it does not exist", server, request.getRoomName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_DOES_NOT_EXIST, null));
+			return;
+		}
+
+		if (room.getPlayers().get(request.getPlayerName()) == null) {
+			debug("%s - Denying request to leave room %s, the player is not registered in this room", server, request.getRoomName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NOT_REGISTERED, null));
+			return;
+		}
+
+		debug("%s - Accepting request to leave room %s", server, request.getRoomName());
+		answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
+		room.remove(player.getName());
 	}
 }

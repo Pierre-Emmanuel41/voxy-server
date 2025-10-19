@@ -34,11 +34,11 @@ public interface IVoxyRoom {
 	void add(IVoxyPlayer player);
 
 	/**
-	 * Removes the given player from this room.
+	 * Removes the player associated to the given name from this room.
 	 *
-	 * @param player The player to remove.
+	 * @param name The name of the player to remove.
 	 */
-	void remove(IVoxyPlayer player);
+	void remove(String name);
 
 	/**
 	 * @return The UDP port used by the players to communicate.
