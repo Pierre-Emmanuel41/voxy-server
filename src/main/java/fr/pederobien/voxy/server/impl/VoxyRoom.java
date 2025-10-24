@@ -1,30 +1,21 @@
 package fr.pederobien.voxy.server.impl;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
-import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
-import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
-import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
-import fr.pederobien.voxy.server.event.LeaveRoomPreEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPrevent;
-import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
+import fr.pederobien.voxy.server.interfaces.IPlayerList;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyRoom implements IVoxyRoom, IEventListener {
 	private final VoxyServer server;
 	private final VocalServer vocalServer;
-	private final Map<String, IVoxyPlayer> players;
+	private final IPlayerList players;
 	private String name;
-	private Object lock;
 
 	/***
 	 * Creates a room where players can speak together.
@@ -36,11 +27,9 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 		this.server = server;
 		this.name = name;
 
-		players = new HashMap<String, IVoxyPlayer>();
+		players = new PlayerList(this);
 		vocalServer = new VocalServer(this);
 		vocalServer.open();
-
-		lock = new Object();
 
 		EventManager.registerListener(this);
 	}
@@ -68,47 +57,8 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 	}
 
 	@Override
-	public Map<String, IVoxyPlayer> getPlayers() {
-		return Collections.unmodifiableMap(players);
-	}
-
-	@Override
-	public void add(IVoxyPlayer player) {
-		synchronized (lock) {
-			if (players.get(player.getName()) != null)
-				return;
-		}
-
-		JoinRoomPreEvent preEvent = new JoinRoomPreEvent(this, player);
-		JoinRoomPostEvent postEvent = new JoinRoomPostEvent(this, player);
-		Runnable exe = () -> {
-			info("Player %s joined room %s", player.getName(), name);
-			synchronized (lock) {
-				players.put(player.getName(), player);
-			}
-		};
-
-		EventManager.callEvent(preEvent, exe, postEvent);
-	}
-
-	@Override
-	public void remove(String name) {
-		IVoxyPlayer player;
-		synchronized (lock) {
-			if ((player = players.get(name)) == null)
-				return;
-		}
-
-		LeaveRoomPreEvent preEvent = new LeaveRoomPreEvent(this, player);
-		LeaveRoomPostEvent postEvent = new LeaveRoomPostEvent(this, player);
-		Runnable exe = () -> {
-			info("Player %s left room %s", player.getName(), name);
-			synchronized (lock) {
-				players.remove(player.getName());
-			}
-		};
-
-		EventManager.callEvent(preEvent, exe, postEvent);
+	public IPlayerList getPlayers() {
+		return players;
 	}
 
 	@Override

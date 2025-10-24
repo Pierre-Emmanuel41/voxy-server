@@ -3,7 +3,6 @@ package fr.pederobien.voxy.server.impl;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -21,21 +20,16 @@ import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
-import fr.pederobien.voxy.server.event.AddRoomPostEvent;
-import fr.pederobien.voxy.server.event.AddRoomPreEvent;
-import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
-import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
-import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
+import fr.pederobien.voxy.server.interfaces.IRoomList;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
-import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyServer implements IVoxyServer, IEventListener {
 	private final ProtocolServerConfig<IEthernetEndPoint> config;
 	private final IProtocolServer server;
 	private final List<VoxyClient> clients;
+	private final IRoomList rooms;
 	private final Map<String, IVoxyPlayer> players;
-	private final Map<String, IVoxyRoom> rooms;
 	private final Object lock;
 
 	/**
@@ -53,8 +47,8 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 		server = Messenger.createTcpServer(config);
 
 		clients = new ArrayList<VoxyClient>();
+		rooms = new RoomList(this);
 		players = new HashMap<String, IVoxyPlayer>();
-		rooms = new HashMap<String, IVoxyRoom>();
 
 		// Lock to prevent simultaneous list modifications
 		lock = new Object();
@@ -87,54 +81,8 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 	}
 
 	@Override
-	public Map<String, IVoxyRoom> getRooms() {
-		return Collections.unmodifiableMap(rooms);
-	}
-
-	@Override
-	public void add(String name) {
-		synchronized (lock) {
-			boolean registered = rooms.get(name) != null;
-
-			// Room's name shall be unique
-			if (!registered) {
-				// Notifying first that a room is about to be added, if event not cancelled then the room is added
-				AddRoomPreEvent preEvent = new AddRoomPreEvent(this, name);
-				Runnable exe = () -> {
-					IVoxyRoom room = new VoxyRoom(this, name);
-					info("Room %s has been added", room.getName());
-					rooms.put(name, room);
-					EventManager.callEvent(new AddRoomPostEvent(this, room));
-				};
-
-				EventManager.callEvent(preEvent, exe);
-			}
-		}
-	}
-
-	@Override
-	public void remove(String name) {
-		synchronized (lock) {
-			Iterator<Map.Entry<String, IVoxyRoom>> iterator = rooms.entrySet().iterator();
-			while (iterator.hasNext()) {
-				Map.Entry<String, IVoxyRoom> entry = iterator.next();
-				if (entry.getKey().equals(name)) {
-
-					// Notifying first that a room is about to be removed, if event not cancelled then the room is removed
-					RemoveRoomPrevent preEvent = new RemoveRoomPrevent(this, entry.getValue());
-					Runnable exe = () -> {
-						info("Room %s has been removed", entry.getValue().getName());
-						iterator.remove();
-						EventManager.callEvent(new RemoveRoomPostEvent(this, entry.getValue()));
-					};
-
-					EventManager.callEvent(preEvent, exe);
-
-					// Room's name is unique
-					break;
-				}
-			}
-		}
+	public IRoomList getRooms() {
+		return rooms;
 	}
 
 	@Override
@@ -167,17 +115,6 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 			} catch (Exception e) {
 				// Do nothing
 			}
-		}
-	}
-
-	@EventHandler
-	private void onRoomRenamed(RenameRoomPostEvent event) {
-		if (event.getRoom().getServer() != this)
-			return;
-
-		synchronized (lock) {
-			rooms.remove(event.getOldName());
-			rooms.put(event.getRoom().getName(), event.getRoom());
 		}
 	}
 

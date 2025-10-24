@@ -30,21 +30,7 @@ public interface IVoxyServer {
 	Map<String, IVoxyPlayer> getPlayers();
 
 	/**
-	 * @return The map of rooms where player can talk to each other. This map is unmodifiable.
+	 * @return The list of rooms associated to this server.
 	 */
-	Map<String, IVoxyRoom> getRooms();
-
-	/**
-	 * Creates a room with the given name if it not yet already exists.
-	 *
-	 * @param name The room's name.
-	 */
-	void add(String name);
-
-	/**
-	 * Removes the room associated to the given name.
-	 *
-	 * @param name The name of the room to remove.
-	 */
-	void remove(String name);
+	IRoomList getRooms();
 }

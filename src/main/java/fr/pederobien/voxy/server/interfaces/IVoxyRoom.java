@@ -1,7 +1,5 @@
 package fr.pederobien.voxy.server.interfaces;
 
-import java.util.Map;
-
 public interface IVoxyRoom {
 
 	/***
@@ -24,21 +22,7 @@ public interface IVoxyRoom {
 	/**
 	 * @return The map of player currently connected in this room. This map is unmodifiable.
 	 */
-	Map<String, IVoxyPlayer> getPlayers();
-
-	/**
-	 * Adds the given player to this room.
-	 *
-	 * @param player The player to add.
-	 */
-	void add(IVoxyPlayer player);
-
-	/**
-	 * Removes the player associated to the given name from this room.
-	 *
-	 * @param name The name of the player to remove.
-	 */
-	void remove(String name);
+	IPlayerList getPlayers();
 
 	/**
 	 * @return The UDP port used by the players to communicate.
