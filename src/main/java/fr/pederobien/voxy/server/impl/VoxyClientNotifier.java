@@ -16,6 +16,8 @@ import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.LeaveRoomRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerDeafRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerMuteRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.RenameRoomRequest;
@@ -27,6 +29,8 @@ import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangedEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
@@ -123,6 +127,26 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 		// Notifying the remote a player left a room
 		LeaveRoomRequest request = new LeaveRoomRequest(event.getRoom().getName(), event.getPlayer().getName());
 		send(getRequest(VoxyIdentifiers.LEAVE_ROOM, request));
+	}
+
+	@EventHandler
+	private void onPlayerMuteStatusChanged(VoxyPlayerMuteStatusChangedEvent event) {
+		if (event.getPlayer().getServer() != server)
+			return;
+
+		// Notifying the remote a player muted/unmuted itself
+		PlayerMuteRequest request = new PlayerMuteRequest(event.getPlayer().getName(), event.isMute());
+		send(getRequest(VoxyIdentifiers.PLAYER_MUTE, request));
+	}
+
+	@EventHandler
+	private void onPlayerDeafStatusChanged(VoxyPlayerDeafStatusChangedEvent event) {
+		if (event.getPlayer().getServer() != server)
+			return;
+
+		// Notifying the remote a player deaf/undeaf itself
+		PlayerDeafRequest request = new PlayerDeafRequest(event.getPlayer().getName(), event.isDeaf());
+		send(getRequest(VoxyIdentifiers.PLAYER_DEAF, request));
 	}
 
 	@EventHandler

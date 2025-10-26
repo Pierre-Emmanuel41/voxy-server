@@ -9,6 +9,8 @@ import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.LeaveRoomRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerDeafRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerMuteRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.RenameRoomRequest;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
@@ -43,6 +45,8 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		getClient().addRequestHandler(VoxyIdentifiers.RENAME_ROOM, this::onRenameRoomRequest);
 		getClient().addRequestHandler(VoxyIdentifiers.JOIN_ROOM, this::onJoinRoomRequest);
 		getClient().addRequestHandler(VoxyIdentifiers.LEAVE_ROOM, this::onLeaveRoomRequest);
+		getClient().addRequestHandler(VoxyIdentifiers.PLAYER_MUTE, this::onPlayerMuteRequest);
+		getClient().addRequestHandler(VoxyIdentifiers.PLAYER_DEAF, this::onPlayerDeafRequest);
 	}
 
 	/**
@@ -200,5 +204,49 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
 
 		optional.get().getPlayers().remove(player.getName());
+	}
+
+	/**
+	 * Event handler: Method called when the client mutes/unmutes itself.
+	 * 
+	 * @param connection The connection with the client.
+	 * @param messageID  The client's message identifier.
+	 * @param payload    The object that gather properties about the player and the mute status.
+	 */
+	private void onPlayerMuteRequest(IProtocolConnection connection, int messageID, Object payload) {
+		if (!(payload instanceof PlayerMuteRequest request))
+			return;
+
+		debug("%s - Notified the server that its mute status has changed, isMute=%s", player, request.isMute());
+		if (!request.getName().equals(player.getName())) {
+			debug("%s - Ignoring request, the player's name is wrong", server, request.getName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			return;
+		}
+
+		debug("Updating player's mute status");
+		player.setMute(request.isMute());
+	}
+
+	/**
+	 * Event handler: Method called when the client deaf/undeaf itself.
+	 * 
+	 * @param connection The connection with the client.
+	 * @param messageID  The client's message identifier.
+	 * @param payload    The object that gather properties about the player and the deaf status.
+	 */
+	private void onPlayerDeafRequest(IProtocolConnection connection, int messageID, Object payload) {
+		if (!(payload instanceof PlayerDeafRequest request))
+			return;
+
+		debug("%s - Notified the server that its deaf status has changed, isDeaf=%s", player, request.isDeaf());
+		if (!request.getName().equals(player.getName())) {
+			debug("%s - Ignoring request, the player's name is wrong", server, request.getName());
+			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			return;
+		}
+
+		debug("Updating player's deaf status");
+		player.setDeaf(request.isDeaf());
 	}
 }
