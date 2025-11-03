@@ -1,4 +1,4 @@
-package fr.pederobien.voxy.server.impl;
+package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,20 +31,19 @@ import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangedEvent;
-import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class VoxyClientNotifier extends ClientWrapper implements IEventListener {
-	private final VoxyServer server;
-	private VoxyPlayer player;
+	private final VoxyServerImpl server;
+	private VoxyPlayerImpl player;
 
 	/**
-	 * Creates a notifier to send updates to the client.
+	 * Creates a notifier to send updates to the remote client.
 	 * 
-	 * @param server The server associated to this notifier.
+	 * @param server The server implementation associated to this notifier.
 	 * @param source The client to notify.
 	 */
-	public VoxyClientNotifier(VoxyServer server, IProtocolClient client) {
+	public VoxyClientNotifier(VoxyServerImpl server, IProtocolClient client) {
 		super(client);
 
 		this.server = server;
@@ -78,22 +77,24 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 	/**
 	 * @return The player associated to this client.
 	 */
-	protected VoxyPlayer getPlayer() {
+	protected VoxyPlayerImpl getPlayer() {
 		return player;
 	}
 
 	@EventHandler
 	private void onRoomAdded(AddRoomPostEvent event) {
-		if (event.getServer() != server)
+		if (event.getServer() != server.getExternal())
 			return;
 
+		VoxyRoomImpl room = server.getRooms().getByName(event.getRoom().getName());
+
 		// Notifying the remote that a room has been added
-		send(getRequest(VoxyIdentifiers.ADD_ROOM, new AddRoomRequest(event.getRoom().getName(), event.getRoom().getPort())));
+		send(getRequest(VoxyIdentifiers.ADD_ROOM, new AddRoomRequest(room.getName(), room.getVocalServer().getPort())));
 	}
 
 	@EventHandler
 	private void onRoomRemoved(RemoveRoomPrevent event) {
-		if (event.getServer() != server)
+		if (event.getServer() != server.getExternal())
 			return;
 
 		// Notifying the remote that a room has been removed
@@ -102,7 +103,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 
 	@EventHandler
 	private void onRoomRenamed(RenameRoomPostEvent event) {
-		if (event.getRoom().getServer() != server)
+		if (event.getRoom().getServer() != server.getExternal())
 			return;
 
 		// Notifying the remote that a room has been renamed
@@ -111,7 +112,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 
 	@EventHandler
 	private void onPlayerJoinedRoom(JoinRoomPostEvent event) {
-		if (event.getRoom().getServer() != server)
+		if (event.getRoom().getServer() != server.getExternal())
 			return;
 
 		// Notifying the remote a player joined a room
@@ -121,7 +122,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 
 	@EventHandler
 	private void onPlayerLeftRoom(LeaveRoomPostEvent event) {
-		if (event.getRoom().getServer() != server)
+		if (event.getRoom().getServer() != server.getExternal())
 			return;
 
 		// Notifying the remote a player left a room
@@ -131,7 +132,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 
 	@EventHandler
 	private void onPlayerMuteStatusChanged(VoxyPlayerMuteStatusChangedEvent event) {
-		if (event.getPlayer().getServer() != server)
+		if (event.getPlayer().getServer() != server.getExternal())
 			return;
 
 		// Notifying the remote a player muted/unmuted itself
@@ -141,7 +142,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 
 	@EventHandler
 	private void onPlayerDeafStatusChanged(VoxyPlayerDeafStatusChangedEvent event) {
-		if (event.getPlayer().getServer() != server)
+		if (event.getPlayer().getServer() != server.getExternal())
 			return;
 
 		// Notifying the remote a player deaf/undeaf itself
@@ -183,7 +184,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 			return false;
 		}
 
-		if (server.getPlayers().get(payload.getName()) != null) {
+		if (server.getPlayerByName(payload.getName()) != null) {
 			debug("%s - Denying %s, a player with the same name is already registered", server);
 			IRequestMessage response = getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_ALREADY_EXIST, null);
 			response.setSync(true);
@@ -191,7 +192,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 			return false;
 		}
 
-		player = new VoxyPlayer(server, payload.getName(), payload.isMute(), payload.isDeaf());
+		player = new VoxyPlayerImpl(server, payload.getName(), payload.isMute(), payload.isDeaf());
 
 		debug("%s - Accepting player properties: name=%s, isMute=%s, isDeaf=%s", server, player.getName(), player.isMute(), player.isDeaf());
 		answer(identifier, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
@@ -209,13 +210,13 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 		debug("%s - requires server's properties", player);
 
 		List<RoomInfo> rooms = new ArrayList<RoomInfo>();
-		for (IVoxyRoom room : server.getRooms().toList()) {
+		for (VoxyRoomImpl room : server.getRooms().get()) {
 
 			List<PlayerInfo> players = new ArrayList<PlayerInfo>();
-			for (IVoxyPlayer player : room.getPlayers().toList())
+			for (VoxyPlayerImpl player : room.getPlayers().get())
 				players.add(new PlayerInfo(player.getName(), player.isMute(), player.isDeaf()));
 
-			rooms.add(new RoomInfo(room.getName(), room.getPort(), players));
+			rooms.add(new RoomInfo(room.getName(), room.getVocalServer().getPort(), players));
 		}
 
 		ServerPropertiesRequest payload = new ServerPropertiesRequest(rooms);

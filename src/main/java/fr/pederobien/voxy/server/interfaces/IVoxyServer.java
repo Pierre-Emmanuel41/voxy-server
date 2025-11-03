@@ -1,7 +1,5 @@
 package fr.pederobien.voxy.server.interfaces;
 
-import java.util.Map;
-
 public interface IVoxyServer {
 
 	/**
@@ -23,11 +21,6 @@ public interface IVoxyServer {
 	 * Dispose the server, it cannot be re-opened anymore.
 	 */
 	void dispose();
-
-	/***
-	 * @return The map of players currently connected on this server. This map is unmodifiable.
-	 */
-	Map<String, IVoxyPlayer> getPlayers();
 
 	/**
 	 * @return The list of rooms associated to this server.

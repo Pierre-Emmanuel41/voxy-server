@@ -1,4 +1,4 @@
-package fr.pederobien.voxy.server.impl;
+package fr.pederobien.voxy.server.impl.internal;
 
 import fr.pederobien.messenger.interfaces.IRequestMessage;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;

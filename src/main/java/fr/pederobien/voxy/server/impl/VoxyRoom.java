@@ -1,92 +1,51 @@
 package fr.pederobien.voxy.server.impl;
 
-import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
-import fr.pederobien.utils.event.Logger;
-import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
-import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPrevent;
+import fr.pederobien.voxy.server.impl.internal.VoxyRoomImpl;
 import fr.pederobien.voxy.server.interfaces.IPlayerList;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyRoom implements IVoxyRoom, IEventListener {
-	private final VoxyServer server;
-	private final VocalServer vocalServer;
-	private final IPlayerList players;
-	private String name;
+	private final VoxyRoomImpl roomImpl;
 
-	/***
+	/**
 	 * Creates a room where players can speak together.
 	 *
-	 * @param server The server on which this room is created.
-	 * @param name   The room name.
+	 * @param roomImpl The room implementation.
 	 */
-	public VoxyRoom(VoxyServer server, String name) {
-		this.server = server;
-		this.name = name;
-
-		players = new PlayerList(this);
-		vocalServer = new VocalServer(this);
-		vocalServer.open();
-
-		EventManager.registerListener(this);
+	public VoxyRoom(VoxyRoomImpl roomImpl) {
+		this.roomImpl = roomImpl;
 	}
 
 	@Override
 	public IVoxyServer getServer() {
-		return server;
+		return roomImpl.getServer().getExternal();
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return roomImpl.getName();
 	}
 
 	@Override
-	public void setName(String name) {
+	public boolean setName(String name) {
 		RenameRoomPrevent preEvent = new RenameRoomPrevent(this, name);
-		RenameRoomPostEvent postEvent = new RenameRoomPostEvent(this, this.name);
-		Runnable exe = () -> {
-			info("Room %s has been renamed as %s", this.name, name);
-			this.name = name;
-		};
+		EventManager.callEvent(preEvent, () -> roomImpl.setName(name));
 
-		EventManager.callEvent(preEvent, exe, postEvent);
+		// Event not cancelled to the room has been renamed.
+		return !preEvent.isCancelled();
 	}
 
 	@Override
 	public IPlayerList getPlayers() {
-		return players;
-	}
-
-	@Override
-	public int getPort() {
-		return vocalServer.getPort();
+		return roomImpl.getPlayers().getExternal();
 	}
 
 	@Override
 	public String toString() {
-		return name;
-	}
-
-	@EventHandler
-	private void onRoomRemoved(RemoveRoomPostEvent event) {
-		if (event.getRoom() != this)
-			return;
-
-		vocalServer.close();
-		vocalServer.dispose();
-	}
-
-	/**
-	 * Creates a LogEvent with log level INFO and the given formatted text.
-	 *
-	 * @param format The formatter if the message to display has arguments.
-	 * @param args   The arguments of the message to display.
-	 */
-	private void info(String format, Object... args) {
-		Logger.info("%s %s", getServer(), String.format(format, args));
+		return roomImpl.toString();
 	}
 }

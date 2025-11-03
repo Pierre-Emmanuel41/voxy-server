@@ -1,4 +1,4 @@
-package fr.pederobien.voxy.server.impl;
+package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.function.Consumer;
 
@@ -15,7 +15,7 @@ public class VoxyClient implements IEventListener {
 	 * @param server The server with which this client is connected.
 	 * @param client The client that gather requests that can be sent to the remote.
 	 */
-	public VoxyClient(VoxyServer server, IProtocolClient client) {
+	public VoxyClient(VoxyServerImpl server, IProtocolClient client) {
 		notifier = new VoxyClientNotifier(server, client);
 		handler = new VoxyClientRequestHandler(server, client);
 	}
@@ -23,7 +23,7 @@ public class VoxyClient implements IEventListener {
 	/**
 	 * @return The player associated to this client.
 	 */
-	public VoxyPlayer getPlayer() {
+	public VoxyPlayerImpl getPlayer() {
 		return notifier.getPlayer();
 	}
 

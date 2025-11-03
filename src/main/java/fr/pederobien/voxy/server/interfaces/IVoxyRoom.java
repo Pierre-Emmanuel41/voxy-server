@@ -16,16 +16,13 @@ public interface IVoxyRoom {
 	 * Set the name of this room.
 	 *
 	 * @param name The new room's name.
+	 * 
+	 * @return True if the room has been renamed, false otherwise.
 	 */
-	void setName(String name);
+	boolean setName(String name);
 
 	/**
 	 * @return The map of player currently connected in this room. This map is unmodifiable.
 	 */
 	IPlayerList getPlayers();
-
-	/**
-	 * @return The UDP port used by the players to communicate.
-	 */
-	int getPort();
 }

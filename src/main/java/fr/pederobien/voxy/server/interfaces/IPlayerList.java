@@ -10,16 +10,15 @@ public interface IPlayerList {
 	 * registered, a JoinRoomPreEvent is thrown. If the event is cancelled, then returns false. If the JoinRoomPreEvent is not
 	 * cancelled, then the player is added to the list and a JoinRoomPostEvent is thrown to notify each client.
 	 * 
-	 * @param player The player to add to the list.
+	 * @param name The name of the player to add to the list.
 	 * 
 	 * @return True if the player has been added, false otherwise.
 	 */
-	boolean add(IVoxyPlayer player);
+	boolean add(String name);
 
 	/**
 	 * Check if there is a player registered for the given name. If no player is registered, then returns false. If a player is
-	 * registered for the given name, a LeaveRoomPreEvent is thrown. If the event is cancelled, then returns false. If the
-	 * LeaveRoomPreEvent is not cancelled, then the player is removed and a LeaveRoomPostEvent is thrown to notify each client.
+	 * registered for the given name, a LeaveRoomPostEvent is thrown to notify each client.
 	 * 
 	 * @param name The name of the player to remove.
 	 * 
@@ -42,7 +41,7 @@ public interface IPlayerList {
 	Optional<IVoxyPlayer> get(String name);
 
 	/**
-	 * @return An unmodifiable list containing the rooms registered in this list.
+	 * @return A list containing the players registered in this list.
 	 */
 	List<IVoxyPlayer> toList();
 }
