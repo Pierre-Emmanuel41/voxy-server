@@ -2,6 +2,7 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.AddRoomPostEvent;
@@ -50,9 +51,13 @@ public class RoomListImpl extends ServerElement {
 	 * @param name The name of the room to create.
 	 */
 	public void remove(VoxyRoomImpl roomImpl) {
+		boolean removed;
 		synchronized (lock) {
-			rooms.remove(roomImpl);
+			removed = rooms.remove(roomImpl);
 		}
+
+		if (!removed)
+			return;
 
 		info("Room %s has been removed", roomImpl.getName());
 		EventManager.callEvent(new RemoveRoomPostEvent(getServer().getExternal(), roomImpl.getExternal()));
@@ -89,10 +94,14 @@ public class RoomListImpl extends ServerElement {
 	}
 
 	/**
-	 * @return The list of room implementations registered in this list.
+	 * Performs the given action over each rooms in this list.
+	 * 
+	 * @param action The action to perform.
 	 */
-	public List<VoxyRoomImpl> get() {
-		return rooms;
+	public void foreach(Consumer<VoxyRoomImpl> action) {
+		synchronized (lock) {
+			rooms.forEach(action);
+		}
 	}
 
 	/**

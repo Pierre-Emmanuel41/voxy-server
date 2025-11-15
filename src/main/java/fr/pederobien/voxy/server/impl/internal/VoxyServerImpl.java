@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import fr.pederobien.communication.impl.EthernetEndPoint;
+import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.interfaces.IEthernetEndPoint;
+import fr.pederobien.communication.testing.tools.SimpleCertificate;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.ProtocolServerConfig;
@@ -39,7 +41,9 @@ public class VoxyServerImpl implements IEventListener {
 		config = Messenger.createServerConfig(VoxyProtocolManager.instance(), name, new EthernetEndPoint(port));
 
 		// TODO: Replace SimpleCertificate by a proper one
-		// config.setLayerInitializer(() -> new AesSafeLayerInitializer(new SimpleCertificate()));
+		config.setLayerInitializer(() -> new AesSafeLayerInitializer(new SimpleCertificate()));
+
+		config.setConnectionName("VoxyClient");
 
 		server = Messenger.createTcpServer(config);
 
@@ -69,6 +73,8 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void open() {
 		server.open();
+
+		roomsImpl.foreach(room -> room.getVocalServer().open());
 	}
 
 	/**
@@ -76,6 +82,8 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void close() {
 		server.close();
+
+		roomsImpl.foreach(room -> room.getVocalServer().close());
 	}
 
 	/**
@@ -83,6 +91,22 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void dispose() {
 		server.dispose();
+
+		roomsImpl.foreach(room -> room.getVocalServer().dispose());
+	}
+
+	/**
+	 * @return True if the server is opened, false otherwise.
+	 */
+	public boolean isOpened() {
+		return server.isOpened();
+	}
+
+	/**
+	 * @return True if this server is disposed, false otherwise.
+	 */
+	public boolean isDisposed() {
+		return server.isDisposed();
 	}
 
 	/**
@@ -146,7 +170,11 @@ public class VoxyServerImpl implements IEventListener {
 
 			// Adding delay to let the client be ready to handle server's initialization sequence
 			try {
-				Thread.sleep(500);
+				int delay = 500;
+
+				debug("Requiring player's properties in %s ms", delay);
+				Thread.sleep(delay);
+
 				client.initialize(callback);
 			} catch (Exception e) {
 				// Do nothing
@@ -155,12 +183,22 @@ public class VoxyServerImpl implements IEventListener {
 	}
 
 	/**
-	 * Creates a LogEvent with log level INFO and the given formatted text.
+	 * Print a log using DEBUG level
 	 *
-	 * @param format The formatter if the message to display has arguments.
-	 * @param args   The arguments of the message to display.
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
 	 */
-	private void info(String format, Object... args) {
-		Logger.info("%s %s", this, String.format(format, args));
+	protected void debug(String format, Object... args) {
+		Logger.debug("%s - %s", this, String.format(format, args));
+	}
+
+	/**
+	 * Print a log using INFO level
+	 *
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
+	 */
+	protected void info(String format, Object... args) {
+		Logger.info("%s - %s", this, String.format(format, args));
 	}
 }

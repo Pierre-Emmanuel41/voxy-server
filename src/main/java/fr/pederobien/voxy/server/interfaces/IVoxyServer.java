@@ -18,6 +18,16 @@ public interface IVoxyServer {
 	void close();
 
 	/**
+	 * @return True if the server is opened, false otherwise.
+	 */
+	boolean isOpened();
+
+	/**
+	 * @return True if this server is disposed, false otherwise.
+	 */
+	boolean isDisposed();
+
+	/**
 	 * Dispose the server, it cannot be re-opened anymore.
 	 */
 	void dispose();

@@ -2,6 +2,7 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
@@ -52,9 +53,13 @@ public class PlayerListImpl extends ServerElement {
 	 * @param name The name of the player to remove.
 	 */
 	public void remove(VoxyPlayerImpl playerImpl) {
+		boolean removed;
 		synchronized (lock) {
-			players.remove(playerImpl);
+			removed = players.remove(playerImpl);
 		}
+
+		if (!removed)
+			return;
 
 		info("Player %s left the room %s", playerImpl, roomImpl);
 		EventManager.callEvent(new LeaveRoomPostEvent(roomImpl.getExternal(), playerImpl.getExternal()));
@@ -105,10 +110,14 @@ public class PlayerListImpl extends ServerElement {
 	}
 
 	/**
-	 * @return The list of player implementations registered in this list.
+	 * Performs the given action over each players in this list.
+	 * 
+	 * @param action The action to perform.
 	 */
-	public List<VoxyPlayerImpl> get() {
-		return players;
+	public void foreach(Consumer<VoxyPlayerImpl> action) {
+		synchronized (lock) {
+			players.forEach(action);
+		}
 	}
 
 	/**

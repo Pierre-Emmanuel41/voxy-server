@@ -4,10 +4,9 @@ import fr.pederobien.messenger.interfaces.IRequestMessage;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;
 import fr.pederobien.protocol.interfaces.IError;
 import fr.pederobien.protocol.interfaces.IIdentifier;
-import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 
-public class ClientWrapper {
+public class ClientWrapper extends ServerElement {
 	private final IProtocolClient client;
 
 	/**
@@ -15,7 +14,8 @@ public class ClientWrapper {
 	 * 
 	 * @param client The client to wrap.
 	 */
-	public ClientWrapper(IProtocolClient client) {
+	public ClientWrapper(VoxyServerImpl server, IProtocolClient client) {
+		super(server);
 		this.client = client;
 	}
 
@@ -57,7 +57,13 @@ public class ClientWrapper {
 	 * @param request The request to send to the remote.
 	 */
 	protected void send(IRequestMessage request) {
-		client.getConnection().send(request);
+		try {
+			client.getConnection().send(request);
+		} catch (Exception e) {
+			// IllegalStateException means connection has been closed
+			if (!(e instanceof IllegalStateException))
+				error("An exception occurred while sending a request to client %s, message: %s", client, e.getMessage());
+		}
 	}
 
 	/**
@@ -67,7 +73,13 @@ public class ClientWrapper {
 	 * @param request   The request to send to the remote.
 	 */
 	protected void answer(int messageID, IRequestMessage request) {
-		client.getConnection().answer(messageID, request);
+		try {
+			client.getConnection().answer(messageID, request);
+		} catch (Exception e) {
+			// IllegalStateException means connection has been closed
+			if (!(e instanceof IllegalStateException))
+				error("An exception occurred while answering to client %s, message: %s", client, e.getMessage());
+		}
 	}
 
 	/**
@@ -83,25 +95,5 @@ public class ClientWrapper {
 		} catch (ClassCastException e) {
 			return null;
 		}
-	}
-
-	/**
-	 * Print a log using INFO level
-	 *
-	 * @param message The message to print.
-	 * @param args    The arguments of the message.
-	 */
-	protected void info(String message, Object... args) {
-		Logger.info(String.format(message, args));
-	}
-
-	/**
-	 * Print a log using DEBUG level.
-	 *
-	 * @param message The message to print.
-	 * @param args    The arguments of the message.
-	 */
-	protected void debug(String format, Object... args) {
-		Logger.debug(String.format(format, args));
 	}
 }

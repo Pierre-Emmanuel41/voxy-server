@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import fr.pederobien.communication.impl.EthernetEndPoint;
+import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.interfaces.IEthernetEndPoint;
+import fr.pederobien.communication.testing.tools.SimpleCertificate;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.ProtocolServerConfig;
@@ -17,6 +19,7 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
+import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 
 public class VocalServer extends ServerElement implements IEventListener {
 	private final VoxyRoomImpl roomImpl;
@@ -35,11 +38,14 @@ public class VocalServer extends ServerElement implements IEventListener {
 
 		this.roomImpl = roomImpl;
 
-		String serverName = String.format("%s-Server", roomImpl.getName());
+		String serverName = String.format("%s-VocalServer", roomImpl.getName());
 		config = Messenger.createServerConfig(VoxyProtocolManager.instance(), serverName, new EthernetEndPoint(0));
 
 		// TODO: Replace SimpleCertificate by a proper one
-		// config.setLayerInitializer(() -> new AesSafeLayerInitializer(new SimpleCertificate()));
+		config.setLayerInitializer(() -> new AesSafeLayerInitializer(new SimpleCertificate()));
+
+		// The name to use when a client logs
+		config.setConnectionName("VoxyVocalClient");
 
 		server = Messenger.createUdpServer(config);
 
@@ -89,25 +95,10 @@ public class VocalServer extends ServerElement implements IEventListener {
 	}
 
 	/**
-	 * Check if a player with the given name is registered in the room associated to this server.
-	 * 
-	 * @param name The player's name to check.
-	 * 
-	 * @return True if a player with the given name is registered, false otherwise.
+	 * @return The room implementation associated to this vocal server.
 	 */
-	public boolean isRegistered(String name) {
-		return roomImpl.getPlayers().getByName(name) != null;
-	}
-
-	/**
-	 * Removes the given client from the server's clients list.
-	 * 
-	 * @param client The client to remove.
-	 */
-	protected void remove(VocalClient client) {
-		synchronized (lock) {
-			clients.remove(client);
-		}
+	public VoxyRoomImpl getRoom() {
+		return roomImpl;
 	}
 
 	@EventHandler
@@ -134,11 +125,23 @@ public class VocalServer extends ServerElement implements IEventListener {
 
 		// Adding delay to let the client be ready to handle server's initialization sequence
 		try {
-			Thread.sleep(500);
+			int delay = 500;
+
+			debug("Requiring player's properties in %s ms", delay);
+			Thread.sleep(delay);
+
 			client.initialize(callback);
 		} catch (Exception e) {
 			// Do nothing
 		}
+	}
+
+	@EventHandler
+	private void onRoomRenamed(RenameRoomPostEvent event) {
+		if (event.getRoom() != roomImpl.getExternal())
+			return;
+
+		config.setName(event.getRoom().getName());
 	}
 
 	@EventHandler
@@ -155,10 +158,30 @@ public class VocalServer extends ServerElement implements IEventListener {
 				if (client.getPlayerName().equals(event.getPlayer().getName())) {
 					client.dispose();
 					iterator.remove();
-					Logger.info("%s - Removing player %s", this, event.getPlayer().getName());
+					Logger.info("%s - Unregistering player %s", this, event.getPlayer().getName());
 					break;
 				}
 			}
 		}
+	}
+
+	/**
+	 * Print a log using DEBUG level
+	 *
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
+	 */
+	protected void debug(String format, Object... args) {
+		Logger.debug("%s - %s", this, String.format(format, args));
+	}
+
+	/**
+	 * Print a log using INFO level
+	 *
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
+	 */
+	protected void info(String format, Object... args) {
+		Logger.info("%s - %s", this, String.format(format, args));
 	}
 }

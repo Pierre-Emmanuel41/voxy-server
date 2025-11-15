@@ -14,6 +14,6 @@ public class VoxyServerFactory {
 	 * @return The created voxy server.
 	 */
 	public static IVoxyServer create(String name, int port) {
-		return Factory.getServerImpl(name, port).getExternal();
+		return Factory.createServerImpl(name, port).getExternal();
 	}
 }

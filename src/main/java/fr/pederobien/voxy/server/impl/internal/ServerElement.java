@@ -28,7 +28,7 @@ public class ServerElement {
 	 * @param args    The arguments of the message.
 	 */
 	protected void debug(String format, Object... args) {
-		Logger.debug("%s %s", getServer(), String.format(format, args));
+		Logger.debug("%s - %s", server, String.format(format, args));
 	}
 
 	/**
@@ -38,7 +38,7 @@ public class ServerElement {
 	 * @param args    The arguments of the message.
 	 */
 	protected void info(String format, Object... args) {
-		Logger.info("%s %s", getServer(), String.format(format, args));
+		Logger.info("%s - %s", server, String.format(format, args));
 	}
 
 	/**
@@ -48,6 +48,6 @@ public class ServerElement {
 	 * @param args    The arguments of the message.
 	 */
 	protected void error(String format, Object... args) {
-		Logger.error("%s %s", getServer(), String.format(format, args));
+		Logger.error("%s - %s", server, String.format(format, args));
 	}
 }

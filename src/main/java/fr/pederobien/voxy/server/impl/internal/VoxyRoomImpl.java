@@ -9,7 +9,7 @@ import fr.pederobien.voxy.server.impl.VoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class VoxyRoomImpl extends ServerElement implements IEventListener {
-	private final VocalServer serverImpl;
+	private final VocalServer vocalServer;
 	private final PlayerListImpl playersImpl;
 	private String name;
 
@@ -26,13 +26,15 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 
 		this.name = name;
 
-		serverImpl = new VocalServer(this);
-		serverImpl.open();
-
+		vocalServer = new VocalServer(this);
 		playersImpl = new PlayerListImpl(this);
 		external = new VoxyRoom(this);
 
 		EventManager.registerListener(this);
+
+		// Opening room's vocal server if and only if the voxy server is opened
+		if (server.isOpened())
+			vocalServer.open();
 	}
 
 	@Override
@@ -67,7 +69,7 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	 * @return The vocal server associated to this room implementation.
 	 */
 	public VocalServer getVocalServer() {
-		return serverImpl;
+		return vocalServer;
 	}
 
 	/**
@@ -89,7 +91,7 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 		if (event.getRoom() != this)
 			return;
 
-		serverImpl.close();
-		serverImpl.dispose();
+		vocalServer.close();
+		vocalServer.dispose();
 	}
 }

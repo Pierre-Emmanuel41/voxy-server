@@ -8,7 +8,7 @@ public class Factory {
 	 * @param name The server's name.
 	 * @param port The port number to open.
 	 */
-	public static VoxyServerImpl getServerImpl(String name, int port) {
+	public static VoxyServerImpl createServerImpl(String name, int port) {
 		return new VoxyServerImpl(name, port);
 	}
 }

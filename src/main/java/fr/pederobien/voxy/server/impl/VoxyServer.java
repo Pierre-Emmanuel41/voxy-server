@@ -33,6 +33,16 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 	}
 
 	@Override
+	public boolean isOpened() {
+		return serverImpl.isOpened();
+	}
+
+	@Override
+	public boolean isDisposed() {
+		return serverImpl.isDisposed();
+	}
+
+	@Override
 	public void dispose() {
 		serverImpl.dispose();
 	}
