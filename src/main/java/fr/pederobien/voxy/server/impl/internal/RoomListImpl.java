@@ -42,6 +42,8 @@ public class RoomListImpl extends ServerElement {
 		}
 
 		info("Room %s has been added", name);
+
+		roomImpl.initialize();
 		EventManager.callEvent(new AddRoomPostEvent(getServer().getExternal(), roomImpl.getExternal()));
 	}
 
