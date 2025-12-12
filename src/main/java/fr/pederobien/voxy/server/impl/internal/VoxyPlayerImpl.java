@@ -55,7 +55,7 @@ public class VoxyPlayerImpl extends ServerElement {
 			return;
 
 		this.isMute = isMute;
-		info("Player %s %s itself", name, isMute ? "Muted" : "Unmuted");
+		info("Player %s %s itself", name, isMute ? "muted" : "unmuted");
 		EventManager.callEvent(new VoxyPlayerMuteStatusChangedEvent(external, isMute));
 	}
 
@@ -64,6 +64,20 @@ public class VoxyPlayerImpl extends ServerElement {
 	 */
 	public boolean isDeaf() {
 		return isDeaf;
+	}
+
+	/**
+	 * Set if this player is deaf. A VoxyPlayerDeafStatusChangedEvent is thrown to notify each connected client.
+	 *
+	 * @param isDeaf True if this player is deaf, false otherwise.
+	 */
+	public void setDeaf(boolean isDeaf) {
+		if (this.isDeaf == isDeaf)
+			return;
+
+		this.isDeaf = isDeaf;
+		info("Player %s %s itself", name, isDeaf ? "deaf" : "undeaf");
+		EventManager.callEvent(new VoxyPlayerDeafStatusChangedEvent(external, isDeaf));
 	}
 
 	/**
@@ -85,19 +99,5 @@ public class VoxyPlayerImpl extends ServerElement {
 
 		VoxyPlayerImpl other = (VoxyPlayerImpl) obj;
 		return name.equals(other.getName());
-	}
-
-	/**
-	 * Set if this player is deaf. A VoxyPlayerDeafStatusChangedEvent is thrown to notify each connected client.
-	 *
-	 * @param isDeaf True if this player is deaf, false otherwise.
-	 */
-	public void setDeaf(boolean isDeaf) {
-		if (this.isDeaf == isDeaf)
-			return;
-
-		this.isDeaf = isDeaf;
-		info("Player %s %s itself", name, isDeaf ? "Deaf" : "Undeaf");
-		EventManager.callEvent(new VoxyPlayerDeafStatusChangedEvent(external, isDeaf));
 	}
 }
