@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import fr.pederobien.utils.event.EventManager;
+import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.AddRoomPreEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.impl.internal.RoomListImpl;
@@ -12,26 +13,28 @@ import fr.pederobien.voxy.server.interfaces.IRoomList;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class RoomList implements IRoomList {
-	private final RoomListImpl listImpl;
+	private final RoomListImpl impl;
 
 	/**
 	 * Creates a list of rooms associated to the given server.
 	 * 
-	 * @param listImpl The implementation of this rooms list.
+	 * @param impl The implementation of this rooms list.
 	 */
-	public RoomList(RoomListImpl listImpl) {
-		this.listImpl = listImpl;
+	public RoomList(RoomListImpl impl) {
+		this.impl = impl;
 	}
 
 	@Override
 	public boolean add(String name) {
 
 		// A room is already registered for the given name
-		if (listImpl.getByName(name) != null)
+		if (impl.getByName(name) != null)
 			return false;
 
-		AddRoomPreEvent preEvent = new AddRoomPreEvent(listImpl.getServer().getExternal(), name);
-		EventManager.callEvent(preEvent, () -> listImpl.add(name));
+		debug("Adding room %s", name);
+
+		AddRoomPreEvent preEvent = new AddRoomPreEvent(impl.getServer().getExternal(), name);
+		EventManager.callEvent(preEvent, () -> impl.add(name));
 
 		// Event not cancelled, a room has been created and added
 		return !preEvent.isCancelled();
@@ -41,12 +44,14 @@ public class RoomList implements IRoomList {
 	public boolean remove(String name) {
 
 		// The room does not exist
-		VoxyRoomImpl roomImpl = listImpl.getByName(name);
-		if (listImpl.getByName(name) == null)
+		VoxyRoomImpl roomImpl = impl.getByName(name);
+		if (impl.getByName(name) == null)
 			return false;
 
-		RemoveRoomPrevent preEvent = new RemoveRoomPrevent(listImpl.getServer().getExternal(), roomImpl.getExternal());
-		EventManager.callEvent(preEvent, () -> listImpl.remove(roomImpl));
+		debug("Removing room %s", name);
+
+		RemoveRoomPrevent preEvent = new RemoveRoomPrevent(impl.getServer().getExternal(), roomImpl.getExternal());
+		EventManager.callEvent(preEvent, () -> impl.remove(roomImpl));
 
 		// Event not cancelled, the room has been removed.
 		return !preEvent.isCancelled();
@@ -54,12 +59,22 @@ public class RoomList implements IRoomList {
 
 	@Override
 	public Optional<IVoxyRoom> get(String name) {
-		VoxyRoomImpl roomImpl = listImpl.getByName(name);
+		VoxyRoomImpl roomImpl = impl.getByName(name);
 		return roomImpl == null ? Optional.empty() : Optional.of(roomImpl.getExternal());
 	}
 
 	@Override
 	public List<IVoxyRoom> toList() {
-		return listImpl.toList();
+		return impl.toList();
+	}
+
+	/**
+	 * Print a log using DEBUG level
+	 *
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
+	 */
+	protected void debug(String format, Object... args) {
+		Logger.debug("%s - %s", impl.getServer(), String.format(format, args));
 	}
 }
