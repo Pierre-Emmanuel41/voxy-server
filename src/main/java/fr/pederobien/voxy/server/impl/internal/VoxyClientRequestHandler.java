@@ -62,7 +62,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		debug("%s Sent a request to add room %s", player, request.getName());
 		if (getServer().getRooms().getByName(request.getName()) != null) {
 			debug("Denying request to add room %s, it already exists", request.getName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_ALREADY_REGISTERED, null));
+			deny(messageID, VoxyIdentifiers.ADD_ROOM, VoxyErrors.ROOM_ALREADY_REGISTERED);
 			return;
 		}
 
@@ -70,11 +70,10 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to add room %s has been cancelled", request.getName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.CANCELLED, null));
+				cancelled(messageID, VoxyIdentifiers.ADD_ROOM);
 			} else {
 				debug("Adding room %s to the server", request.getName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
-
+				noError(messageID, VoxyIdentifiers.ADD_ROOM);
 				getServer().getRooms().add(request.getName());
 			}
 		});
@@ -95,7 +94,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		VoxyRoomImpl room = getServer().getRooms().getByName(request.getName());
 		if (room == null) {
 			debug("%s - Denying request to remove room %s, it does not exist", getServer(), request.getName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_DOES_NOT_EXIST, null));
+			deny(messageID, VoxyIdentifiers.REMOVE_ROOM, VoxyErrors.ROOM_DOES_NOT_EXIST);
 			return;
 		}
 
@@ -103,11 +102,10 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to remove room %s has been cancelled", request.getName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.CANCELLED, null));
+				cancelled(messageID, VoxyIdentifiers.REMOVE_ROOM);
 			} else {
 				debug("Removing room %s from the server", request.getName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
-
+				noError(messageID, VoxyIdentifiers.REMOVE_ROOM);
 				getServer().getRooms().remove(room);
 			}
 		});
@@ -128,13 +126,13 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		VoxyRoomImpl room = getServer().getRooms().getByName(request.getOldName());
 		if (room == null) {
 			debug("Denying request to rename room %s, it does not exist", request.getOldName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_DOES_NOT_EXIST, null));
+			deny(messageID, VoxyIdentifiers.RENAME_ROOM, VoxyErrors.ROOM_DOES_NOT_EXIST);
 			return;
 		}
 
 		if (getServer().getRooms().getByName(request.getNewName()) != null) {
 			debug("Denying request to rename room %s as %s, the new room already exists", request.getOldName(), request.getNewName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_ALREADY_REGISTERED, null));
+			deny(messageID, VoxyIdentifiers.RENAME_ROOM, VoxyErrors.ROOM_ALREADY_REGISTERED);
 			return;
 		}
 
@@ -142,11 +140,10 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to remove room %s has been cancelled", request.getNewName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.CANCELLED, null));
+				cancelled(messageID, VoxyIdentifiers.RENAME_ROOM);
 			} else {
 				debug("Renaming room %s as %s", request.getOldName(), request.getNewName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
-
+				noError(messageID, VoxyIdentifiers.RENAME_ROOM);
 				room.setName(request.getNewName());
 			}
 		});
@@ -166,20 +163,20 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		debug("%s Sent a request to join room %s", player, request.getRoomName());
 		if (!request.getPlayerName().equals(player.getName())) {
 			debug("Denying the request to join room %s, the player's name is wrong", request.getPlayerName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			deny(messageID, VoxyIdentifiers.JOIN_ROOM, VoxyErrors.PLAYER_NAME_INCORRECT);
 			return;
 		}
 
 		VoxyRoomImpl room = getServer().getRooms().getByName(request.getRoomName());
 		if (room == null) {
 			debug("Denying request to join room %s, it does not exist", request.getRoomName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_DOES_NOT_EXIST, null));
+			deny(messageID, VoxyIdentifiers.JOIN_ROOM, VoxyErrors.ROOM_DOES_NOT_EXIST);
 			return;
 		}
 
 		if (room.getPlayers().getByName(request.getPlayerName()) != null) {
 			debug("Denying request to join room %s, the player is already registered", request.getRoomName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_ALREADY_REGISTERED, null));
+			deny(messageID, VoxyIdentifiers.JOIN_ROOM, VoxyErrors.PLAYER_ALREADY_REGISTERED);
 			return;
 		}
 
@@ -194,11 +191,10 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to join room %s has been cancelled", request.getRoomName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.CANCELLED, null));
+				cancelled(messageID, VoxyIdentifiers.JOIN_ROOM);
 			} else {
 				debug("Player %s is joining room %s", request.getPlayerName(), request.getRoomName());
-				answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
-
+				noError(messageID, VoxyIdentifiers.JOIN_ROOM);
 				room.getPlayers().add(player);
 			}
 		});
@@ -218,25 +214,25 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		debug("%s Sent a request to leave room %s", player, request.getRoomName());
 		if (!request.getPlayerName().equals(player.getName())) {
 			debug("Denying the request to leave room %s, the player's name is wrong", request.getPlayerName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			deny(messageID, VoxyIdentifiers.LEAVE_ROOM, VoxyErrors.PLAYER_NAME_INCORRECT);
 			return;
 		}
 
 		VoxyRoomImpl room = getServer().getRooms().getByName(request.getRoomName());
 		if (room == null) {
 			debug("Denying request to leave room %s, it does not exist", request.getRoomName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.ROOM_DOES_NOT_EXIST, null));
+			deny(messageID, VoxyIdentifiers.LEAVE_ROOM, VoxyErrors.ROOM_DOES_NOT_EXIST);
 			return;
 		}
 
 		if (room.getPlayers().getByName(request.getPlayerName()) == null) {
 			debug("Denying request to leave room %s, the player is not registered in this room", request.getRoomName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NOT_REGISTERED, null));
+			deny(messageID, VoxyIdentifiers.LEAVE_ROOM, VoxyErrors.PLAYER_NOT_REGISTERED);
 			return;
 		}
 
 		debug("Removing player %s from room %s", request.getPlayerName(), request.getRoomName());
-		answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.NO_ERROR, null));
+		noError(messageID, VoxyIdentifiers.LEAVE_ROOM);
 
 		room.getPlayers().remove(player);
 	}
@@ -252,10 +248,10 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		if (!(payload instanceof PlayerMuteRequest request))
 			return;
 
-		debug("%s Notified the getServer() that its mute status has changed, isMute=%s", player, request.isMute());
+		debug("%s Notified the server that its mute status has changed, isMute=%s", player, request.isMute());
 		if (!request.getName().equals(player.getName())) {
 			debug("Ignoring request, the player's name is wrong", request.getName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			deny(messageID, VoxyIdentifiers.PLAYER_MUTE, VoxyErrors.PLAYER_NAME_INCORRECT);
 			return;
 		}
 
@@ -274,10 +270,10 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		if (!(payload instanceof PlayerDeafRequest request))
 			return;
 
-		debug("%s Notified the getServer() that its deaf status has changed, isDeaf=%s", player, request.isDeaf());
+		debug("%s Notified the server that its deaf status has changed, isDeaf=%s", player, request.isDeaf());
 		if (!request.getName().equals(player.getName())) {
 			debug("Ignoring request, the player's name is wrong", request.getName());
-			answer(messageID, getRequest(VoxyIdentifiers.ACKOWLEDGEMENT, VoxyErrors.PLAYER_NAME_INCORRECT, null));
+			deny(messageID, VoxyIdentifiers.PLAYER_DEAF, VoxyErrors.PLAYER_NAME_INCORRECT);
 			return;
 		}
 
