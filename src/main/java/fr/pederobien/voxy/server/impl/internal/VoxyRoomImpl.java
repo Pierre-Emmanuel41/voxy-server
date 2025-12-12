@@ -31,10 +31,6 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 		external = new VoxyRoom(this);
 
 		EventManager.registerListener(this);
-
-		// Opening room's vocal server if and only if the voxy server is opened
-		if (server.isOpened())
-			vocalServer.open();
 	}
 
 	@Override
@@ -47,6 +43,15 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * Opens the vocal server associated to this room if the voxy server is opened.
+	 */
+	public void initialize() {
+		// Opening room's vocal server if and only if the voxy server is opened
+		if (getServer().isOpened())
+			vocalServer.open();
 	}
 
 	/**
