@@ -1,5 +1,7 @@
 package fr.pederobien.voxy.server.impl;
 
+import fr.pederobien.utils.event.EventManager;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
@@ -32,8 +34,15 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
-	public void setMute(boolean isMute) {
-		impl.setMute(isMute);
+	public boolean setMute(boolean isMute) {
+		if (isMute() == isMute)
+			return false;
+
+		VoxyPlayerMuteStatusChangePreEvent preEvent = new VoxyPlayerMuteStatusChangePreEvent(this, isMute);
+		EventManager.callEvent(preEvent, () -> impl.setMute(isMute));
+
+		// Event not cancelled, the mute status has been updated
+		return !preEvent.isCancelled();
 	}
 
 	@Override

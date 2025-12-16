@@ -21,8 +21,10 @@ public interface IVoxyPlayer {
 	 * Set if this player is mute. A VoxyPlayerMuteStatusChangedEvent is thrown to notify each connected client.
 	 *
 	 * @param isMute True if this player is mute, false otherwise.
+	 * 
+	 * @return True if the mute status has been updated, false otherwise.
 	 */
-	void setMute(boolean isMute);
+	boolean setMute(boolean isMute);
 
 	/**
 	 * @return True if the player disabled it speakers, false otherwise.

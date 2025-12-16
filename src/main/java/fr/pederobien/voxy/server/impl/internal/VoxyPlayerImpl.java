@@ -2,7 +2,7 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
@@ -51,12 +51,9 @@ public class VoxyPlayerImpl extends ServerElement {
 	 * @param isMute True if this player is mute, false otherwise.
 	 */
 	public void setMute(boolean isMute) {
-		if (this.isMute == isMute)
-			return;
-
 		this.isMute = isMute;
 		info("Player %s %s itself", name, isMute ? "muted" : "unmuted");
-		EventManager.callEvent(new VoxyPlayerMuteStatusChangedEvent(external, isMute));
+		EventManager.callEvent(new VoxyPlayerMuteStatusChangePostEvent(external, isMute));
 	}
 
 	/**

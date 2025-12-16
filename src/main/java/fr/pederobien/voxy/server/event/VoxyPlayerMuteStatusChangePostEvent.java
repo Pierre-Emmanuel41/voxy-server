@@ -4,7 +4,7 @@ import java.util.StringJoiner;
 
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
-public class VoxyPlayerMuteStatusChangedEvent extends VoxyPlayerEvent {
+public class VoxyPlayerMuteStatusChangePostEvent extends VoxyPlayerEvent {
 	private final boolean isMute;
 
 	/**
@@ -13,7 +13,7 @@ public class VoxyPlayerMuteStatusChangedEvent extends VoxyPlayerEvent {
 	 * @param player The player whose the mute status has changed.
 	 * @param isMute True if the player is now muted, false otherwise.
 	 */
-	public VoxyPlayerMuteStatusChangedEvent(IVoxyPlayer player, boolean isMute) {
+	public VoxyPlayerMuteStatusChangePostEvent(IVoxyPlayer player, boolean isMute) {
 		super(player);
 
 		this.isMute = isMute;

@@ -16,6 +16,7 @@ import fr.pederobien.voxy.server.event.AddRoomPreEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.event.RenameRoomPrevent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 
 public class VoxyClientRequestHandler extends ClientWrapper {
 	private VoxyPlayerImpl player;
@@ -255,8 +256,19 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			return;
 		}
 
-		debug("Updating player's mute status");
-		player.setMute(request.isMute());
+		EventManager.callEvent(new VoxyPlayerMuteStatusChangePreEvent(player.getExternal(), request.isMute()), isCancelled -> {
+			// Always sending positive acknowledgment if the player is muting itself, even if the pre-event has been cancelled
+			if (!isCancelled || request.isMute()) {
+				debug("Updating player's mute status");
+				noError(messageID, VoxyIdentifiers.PLAYER_MUTE);
+				player.setMute(request.isMute());
+			}
+			// Notifying the client that the request has been cancelled
+			else if (isCancelled) {
+				debug("The request to unmute player %s has been cancelled", request.getName());
+				cancelled(messageID, VoxyIdentifiers.PLAYER_MUTE);
+			}
+		});
 	}
 
 	/**

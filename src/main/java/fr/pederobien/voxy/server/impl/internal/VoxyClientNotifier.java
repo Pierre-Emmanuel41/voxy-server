@@ -30,7 +30,7 @@ import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
@@ -127,7 +127,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 	}
 
 	@EventHandler
-	private void onPlayerMuteStatusChanged(VoxyPlayerMuteStatusChangedEvent event) {
+	private void onPlayerMuteStatusChanged(VoxyPlayerMuteStatusChangePostEvent event) {
 		if (event.getPlayer().getServer() != getServer().getExternal())
 			return;
 
