@@ -257,16 +257,14 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		}
 
 		EventManager.callEvent(new VoxyPlayerMuteStatusChangePreEvent(player.getExternal(), request.isMute()), isCancelled -> {
-			// Always sending positive acknowledgment if the player is muting itself, even if the pre-event has been cancelled
-			if (!isCancelled || request.isMute()) {
+			// Notifying the client that the request has been cancelled
+			if (isCancelled) {
+				debug("The request to unmute player %s has been cancelled", request.getName());
+				cancelled(messageID, VoxyIdentifiers.PLAYER_MUTE);
+			} else {
 				debug("Updating player's mute status");
 				noError(messageID, VoxyIdentifiers.PLAYER_MUTE);
 				player.setMute(request.isMute());
-			}
-			// Notifying the client that the request has been cancelled
-			else if (isCancelled) {
-				debug("The request to unmute player %s has been cancelled", request.getName());
-				cancelled(messageID, VoxyIdentifiers.PLAYER_MUTE);
 			}
 		});
 	}
