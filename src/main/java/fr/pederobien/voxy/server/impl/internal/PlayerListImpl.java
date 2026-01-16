@@ -14,6 +14,7 @@ import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 public class PlayerListImpl extends ServerElement {
 	private final VoxyRoomImpl roomImpl;
 	private final List<VoxyPlayerImpl> players;
+	private final List<VoxyPlayerImpl> pendings;
 	private final Object lock;
 
 	private final IPlayerList external;
@@ -29,8 +30,49 @@ public class PlayerListImpl extends ServerElement {
 		this.roomImpl = roomImpl;
 
 		players = new ArrayList<VoxyPlayerImpl>();
+		pendings = new ArrayList<VoxyPlayerImpl>();
 		lock = new Object();
 		external = new PlayerList(this);
+	}
+
+	/**
+	 * Adds the given player to the pending list. It is added to the players list if it has been validated by the server.
+	 * 
+	 * @param player The player to add to the pending players list.
+	 */
+	public void addPending(VoxyPlayerImpl player) {
+		synchronized (lock) {
+			pendings.add(player);
+		}
+	}
+
+	/**
+	 * Get the player associated to the given name.
+	 * 
+	 * @param name The name of the player to get.
+	 * @return Null if no player is registered for the given name in the pending list, the player otherwise.
+	 */
+	public VoxyPlayerImpl getPendingByName(String name) {
+		synchronized (lock) {
+			for (VoxyPlayerImpl player : pendings)
+				if (player.getName().equals(name))
+					return player;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Moves the given player from the pending list to the player's list.
+	 * 
+	 * @param player The player to move to the player's list.
+	 */
+	public void validate(VoxyPlayerImpl player) {
+		synchronized (lock) {
+			pendings.remove(player);
+		}
+
+		add(player);
 	}
 
 	/**

@@ -116,7 +116,8 @@ public class VocalServer extends ServerElement implements IEventListener {
 					clients.add(client);
 				}
 
-				info("Player %s joined %s's vocal server", client.getPlayerName(), roomImpl.getName());
+				roomImpl.getPlayers().validate(client.getPlayer());
+				info("Player %s joined %s's vocal server", client.getPlayer().getName(), roomImpl.getName());
 			} else {
 				info("Failure to initialize connection with client %s, disposing connection", client);
 				client.dispose();
@@ -155,7 +156,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 
 			while (iterator.hasNext()) {
 				VocalClient client = iterator.next();
-				if (client.getPlayerName().equals(event.getPlayer().getName())) {
+				if (client.getPlayer().getExternal().equals(event.getPlayer())) {
 					client.dispose();
 					iterator.remove();
 					Logger.info("%s - Unregistering player %s", this, event.getPlayer().getName());

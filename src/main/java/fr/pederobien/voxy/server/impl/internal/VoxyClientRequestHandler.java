@@ -9,6 +9,7 @@ import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.LeaveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerDeafRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerMuteByRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerMuteRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.RenameRoomRequest;
@@ -16,6 +17,7 @@ import fr.pederobien.voxy.server.event.AddRoomPreEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.event.RenameRoomPrevent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 
 public class VoxyClientRequestHandler extends ClientWrapper {
@@ -46,6 +48,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		getClient().addRequestHandler(VoxyIdentifiers.JOIN_ROOM, this::onJoinRoomRequest);
 		getClient().addRequestHandler(VoxyIdentifiers.LEAVE_ROOM, this::onLeaveRoomRequest);
 		getClient().addRequestHandler(VoxyIdentifiers.PLAYER_MUTE, this::onPlayerMuteRequest);
+		getClient().addRequestHandler(VoxyIdentifiers.PLAYER_MUTE_BY, this::onPlayerMuteByRequest);
 		getClient().addRequestHandler(VoxyIdentifiers.PLAYER_DEAF, this::onPlayerDeafRequest);
 	}
 
@@ -196,7 +199,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			} else {
 				debug("Player %s is joining room %s", request.getPlayerName(), request.getRoomName());
 				noError(messageID, VoxyIdentifiers.JOIN_ROOM);
-				room.getPlayers().add(player);
+				room.getPlayers().addPending(player);
 			}
 		});
 	}
@@ -251,7 +254,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 
 		debug("%s Notified the server that its mute status has changed, isMute=%s", player, request.isMute());
 		if (!request.getName().equals(player.getName())) {
-			debug("Ignoring request, the player's name is wrong", request.getName());
+			debug("Denying request, the player's name is wrong", request.getName());
 			deny(messageID, VoxyIdentifiers.PLAYER_MUTE, VoxyErrors.PLAYER_NAME_INCORRECT);
 			return;
 		}
@@ -259,12 +262,71 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		EventManager.callEvent(new VoxyPlayerMuteStatusChangePreEvent(player.getExternal(), request.isMute()), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
-				debug("The request to unmute player %s has been cancelled", request.getName());
+				debug("The request to %s player %s has been cancelled", request.isMute() ? "mute" : "unmute", request.getName());
 				cancelled(messageID, VoxyIdentifiers.PLAYER_MUTE);
 			} else {
 				debug("Updating player's mute status");
 				noError(messageID, VoxyIdentifiers.PLAYER_MUTE);
 				player.setMute(request.isMute());
+			}
+		});
+	}
+
+	/**
+	 * Event handler: Method called when the client mutes/unmutes another player.
+	 * 
+	 * @param connection The connection with the client.
+	 * @param messageID  The client's message identifier.
+	 * @param payload    The object that gather properties about the source player, the target player and the mute status.
+	 */
+	private void onPlayerMuteByRequest(IProtocolConnection connection, int messageID, Object payload) {
+		if (!(payload instanceof PlayerMuteByRequest request))
+			return;
+
+		debug("%s Notified the server that it %s player %s", player, request.isMute() ? "muted" : "unmuted", request.getTarget());
+		if (!request.getSource().equals(player.getName())) {
+			debug("Denying request, the player's name is wrong", request.getSource());
+			deny(messageID, VoxyIdentifiers.PLAYER_MUTE, VoxyErrors.PLAYER_NAME_INCORRECT);
+			return;
+		}
+
+		VoxyRoomImpl room = getServer().getRooms().getRoomByPlayerName(player.getName());
+		if (room == null) {
+			debug("Denying request, the player %s is not registered in a room", player.getName());
+			deny(messageID, VoxyIdentifiers.PLAYER_MUTE_BY, VoxyErrors.PLAYER_NOT_REGISTERED);
+			return;
+		}
+
+		VoxyPlayerImpl target = room.getPlayers().getByName(request.getTarget());
+		if (target == null) {
+			debug("Denying request, the player %s is not registered in the same room", request.getTarget());
+			deny(messageID, VoxyIdentifiers.PLAYER_MUTE_BY, VoxyErrors.PLAYER_NOT_REGISTERED);
+			return;
+		}
+
+		if (request.isMute() && target.isMuteBy(player)) {
+			debug("Denying request, the player %s already muted player %s", request.getSource(), request.getTarget());
+			deny(messageID, VoxyIdentifiers.PLAYER_MUTE_BY, VoxyErrors.PLAYER_ALREADY_MUTED);
+			return;
+		}
+
+		if (!request.isMute() && !target.isMuteBy(player)) {
+			debug("Denying request, the player %s did not mute player %s", request.getSource(), request.getTarget());
+			deny(messageID, VoxyIdentifiers.PLAYER_MUTE_BY, VoxyErrors.PLAYER_NOT_MUTED);
+			return;
+		}
+
+		VoxyPlayerMuteByChangePreEvent preEvent = new VoxyPlayerMuteByChangePreEvent(player.getExternal(), target.getExternal(), request.isMute());
+		EventManager.callEvent(preEvent, isCancelled -> {
+			// Notifying the client that the request has been cancelled
+			if (isCancelled) {
+				String format = "The request to %s player %s by player %s has been cancelled";
+				debug(format, request.isMute() ? "mute" : "unmute", request.getTarget(), request.getSource());
+				cancelled(messageID, VoxyIdentifiers.PLAYER_MUTE_BY);
+			} else {
+				debug("Updating player's mute by status");
+				noError(messageID, VoxyIdentifiers.PLAYER_MUTE_BY);
+				target.setMuteBy(player, request.isMute());
 			}
 		});
 	}

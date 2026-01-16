@@ -17,6 +17,7 @@ import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.LeaveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerDeafRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerMuteByRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerMuteRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
@@ -30,9 +31,9 @@ import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
-import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class VoxyClientNotifier extends ClientWrapper implements IEventListener {
 	private VoxyPlayerImpl player;
@@ -136,6 +137,18 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 	}
 
 	@EventHandler
+	private void OnPlayerMuteByChanged(VoxyPlayerMuteByChangePostEvent event) {
+		if (event.getPlayer().getServer() != getServer().getExternal())
+			return;
+
+		if (event.getPlayer() != getPlayer().getExternal())
+			return;
+
+		// Notifying the source player that it muted/unmuted the target player
+		send(VoxyIdentifiers.PLAYER_MUTE_BY, new PlayerMuteByRequest(event.getTarget().getName(), event.getPlayer().getName(), event.isMute()));
+	}
+
+	@EventHandler
 	private void onPlayerDeafStatusChanged(VoxyPlayerDeafStatusChangedEvent event) {
 		if (event.getPlayer().getServer() != getServer().getExternal())
 			return;
@@ -154,11 +167,12 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 		// Unregistering from events
 		EventManager.unregisterListener(this);
 
-		debug("Notifying each room to remove player %s", player.getName());
+		VoxyRoomImpl room = getServer().getRooms().getRoomByPlayerName(player.getName());
+		if (room == null)
+			return;
 
-		// Removing the player from room if registered in a room
-		for (IVoxyRoom room : getServer().getRooms().toList())
-			room.getPlayers().remove(player.getName());
+		debug("Removing player %s from %s", player.getName(), room.getName());
+		room.getPlayers().remove(room.getPlayers().getByName(player.getName()));
 	}
 
 	/**

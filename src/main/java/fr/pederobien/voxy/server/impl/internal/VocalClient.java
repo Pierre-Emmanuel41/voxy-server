@@ -11,7 +11,7 @@ import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 
 public class VocalClient extends ClientWrapper {
 	private final VocalServer vocalServer;
-	private String playerName;
+	private VoxyPlayerImpl player;
 
 	/**
 	 * Creates a vocal client.
@@ -59,10 +59,10 @@ public class VocalClient extends ClientWrapper {
 	}
 
 	/**
-	 * @return The name of the player.
+	 * @return The player associated to this vocal client.
 	 */
-	public String getPlayerName() {
-		return playerName;
+	public VoxyPlayerImpl getPlayer() {
+		return player;
 	}
 
 	/**
@@ -91,8 +91,15 @@ public class VocalClient extends ClientWrapper {
 			return false;
 		}
 
-		if (vocalServer.getRoom().getPlayers().getByName(payload.getName()) == null) {
-			debug("Denying %s, no player is registered", payload.getName());
+		if (vocalServer.getRoom().getPlayers().getByName(payload.getName()) != null) {
+			debug("Denying %s, player is already registered", payload.getName());
+			IRequestMessage response = createAcknowledgementRequest(VoxyIdentifiers.PLAYER_PROPERTIES, VoxyErrors.PLAYER_ALREADY_REGISTERED);
+			response.setSync(true);
+		}
+
+		VoxyPlayerImpl pending = vocalServer.getRoom().getPlayers().getPendingByName(payload.getName());
+		if (pending == null) {
+			debug("Denying %s, no player is waiting for joining room %s", payload.getName(), vocalServer.getRoom().getName());
 			IRequestMessage response = createAcknowledgementRequest(VoxyIdentifiers.PLAYER_PROPERTIES, VoxyErrors.PLAYER_NOT_REGISTERED);
 			response.setSync(true);
 
@@ -100,9 +107,9 @@ public class VocalClient extends ClientWrapper {
 			return false;
 		}
 
-		playerName = payload.getName();
+		player = pending;
 
-		debug("Accepting player %s", playerName);
+		debug("Accepting player %s", player.getName());
 		noError(messageID, VoxyIdentifiers.PLAYER_PROPERTIES);
 		return true;
 	}
