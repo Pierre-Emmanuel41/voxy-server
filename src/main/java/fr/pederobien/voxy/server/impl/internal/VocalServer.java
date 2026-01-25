@@ -157,9 +157,9 @@ public class VocalServer extends ServerElement implements IEventListener {
 			while (iterator.hasNext()) {
 				VocalClient client = iterator.next();
 				if (client.getPlayer().getExternal().equals(event.getPlayer())) {
+					Logger.info("%s - Unregistering player %s", this, event.getPlayer().getName());
 					client.dispose();
 					iterator.remove();
-					Logger.info("%s - Unregistering player %s", this, event.getPlayer().getName());
 					break;
 				}
 			}

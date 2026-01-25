@@ -2,14 +2,20 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.function.Consumer;
 
+import fr.pederobien.messenger.interfaces.IProtocolConnection;
 import fr.pederobien.messenger.interfaces.IRequestMessage;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;
+import fr.pederobien.utils.event.EventHandler;
+import fr.pederobien.utils.event.EventManager;
+import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerSpeakRequest;
+import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 
-public class VocalClient extends ClientWrapper {
+public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
 	private VoxyPlayerImpl player;
 
@@ -22,7 +28,12 @@ public class VocalClient extends ClientWrapper {
 	protected VocalClient(VocalServer vocalServer, IProtocolClient client) {
 		super(vocalServer.getServer(), client);
 
+		// Registering event handler
+		client.addRequestHandler(VoxyIdentifiers.PLAYER_SPEAK, this::onPlayerSpeakEvent);
+
 		this.vocalServer = vocalServer;
+
+		EventManager.registerListener(this);
 	}
 
 	@Override
@@ -63,6 +74,21 @@ public class VocalClient extends ClientWrapper {
 	 */
 	public VoxyPlayerImpl getPlayer() {
 		return player;
+	}
+
+	@EventHandler
+	private void onPlayerSpeaking(VoxyPlayerSpeakingPostEvent event) {
+		if (!event.getReceivers().contains(player.getExternal()))
+			return;
+
+		String name = event.getPlayer().getName();
+		byte algorithm = event.getAlgorithm();
+		float left = event.getLeft();
+		float right = event.getRight();
+		float global = event.getGlobal();
+		PlayerSpeakRequest request = new PlayerSpeakRequest(name, event.getSample(), algorithm, left, right, global);
+
+		send(VoxyIdentifiers.PLAYER_SPEAK, request);
 	}
 
 	/**
@@ -122,5 +148,29 @@ public class VocalClient extends ClientWrapper {
 	 */
 	protected void debug(String format, Object... args) {
 		Logger.debug("%s - %s", this, String.format(format, args));
+	}
+
+	/**
+	 * Event handler: Method called when the player is speaking.
+	 * 
+	 * @param connection The connection with the client.
+	 * @param messageID  The client's message identifier.
+	 * @param payload    The object that gather properties about player's audio sample.
+	 */
+	private void onPlayerSpeakEvent(IProtocolConnection connection, int messageID, Object payload) {
+		if (!(payload instanceof PlayerSpeakRequest request))
+			return;
+
+		if (!request.getName().equals(player.getName())) {
+			debug("Ignoring player's audio sample, the player name is wrong");
+			return;
+		}
+
+		if (vocalServer.getRoom().getPlayers().getByName(request.getName()) == null) {
+			debug("Ignoring player's audio sample, the player is not registered in the room");
+			return;
+		}
+
+		vocalServer.getRoom().onPlayerIsSpeaking(player, request.getSample(), request.getAlgorithm());
 	}
 }

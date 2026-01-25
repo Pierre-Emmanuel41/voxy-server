@@ -3,6 +3,7 @@ package fr.pederobien.voxy.server.impl.internal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
@@ -160,6 +161,23 @@ public class PlayerListImpl extends ServerElement {
 		synchronized (lock) {
 			players.forEach(action);
 		}
+	}
+
+	/**
+	 * Filter the underlying list of players. The predicate returns true to add the current to the filtered list.
+	 * 
+	 * @param filter The filter to apply to each player.
+	 * @return The filtered list.
+	 */
+	public List<IVoxyPlayer> filter(Predicate<VoxyPlayerImpl> filter) {
+		List<IVoxyPlayer> filtered = new ArrayList<IVoxyPlayer>();
+		synchronized (lock) {
+			for (VoxyPlayerImpl player : players)
+				if (filter.test(player))
+					filtered.add(player.getExternal());
+		}
+
+		return filtered;
 	}
 
 	/**

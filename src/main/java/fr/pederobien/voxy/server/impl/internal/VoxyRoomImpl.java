@@ -10,7 +10,8 @@ import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	private final VocalServer vocalServer;
-	private final PlayerListImpl playersImpl;
+	private final PlayerListImpl players;
+	private final SoundManager soundManager;
 	private String name;
 
 	private final IVoxyRoom external;
@@ -27,7 +28,8 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 		this.name = name;
 
 		vocalServer = new VocalServer(this);
-		playersImpl = new PlayerListImpl(this);
+		players = new PlayerListImpl(this);
+		soundManager = new SoundManager(players);
 		external = new VoxyRoom(this);
 
 		EventManager.registerListener(this);
@@ -81,7 +83,16 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	 * @return The implementation of the players list registered in this room.
 	 */
 	public PlayerListImpl getPlayers() {
-		return playersImpl;
+		return players;
+	}
+
+	/**
+	 * Enable or disable the play back. When player back is enabled, a player will here back the audio samples sent to the server.
+	 * 
+	 * @param playBack True to enable play back, false to disable.
+	 */
+	public void setPlayBack(boolean playBack) {
+		soundManager.setPlayBack(playBack);
 	}
 
 	/**
@@ -89,6 +100,17 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	 */
 	public IVoxyRoom getExternal() {
 		return external;
+	}
+
+	/**
+	 * Method called when the vocal client of a player received an audio sample to dispatch.
+	 * 
+	 * @param source    The speaking player.
+	 * @param sample    The bytes array that contains the audio sample.
+	 * @param algorithm The algorithm used to compress the audio sample.
+	 */
+	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, byte algorithm) {
+		soundManager.onPlayerIsSpeaking(source, sample, algorithm);
 	}
 
 	@EventHandler

@@ -85,15 +85,15 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
-	 * Check if the given source player muted this player.
+	 * Check if this player is muted by another player.
 	 * 
-	 * @param source The source player.
+	 * @param other The player to check.
 	 * 
-	 * @return True if the source player muted this player, false otherwise.
+	 * @return True if the other player muted this player, false otherwise.
 	 */
-	public boolean isMuteBy(VoxyPlayerImpl source) {
+	public boolean isMuteBy(VoxyPlayerImpl other) {
 		synchronized (lock) {
-			return muteByPlayers.contains(source);
+			return muteByPlayers.contains(other);
 		}
 	}
 
