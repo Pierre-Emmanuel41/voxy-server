@@ -61,6 +61,8 @@ public class SoundManager {
 		if (source.isMuteBy(player))
 			return false;
 
+		// TODO: Check for player's distance
+
 		return true;
 	}
 }

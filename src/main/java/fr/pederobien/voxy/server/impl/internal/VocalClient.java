@@ -12,7 +12,7 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
-import fr.pederobien.voxy.common.impl.requests.PlayerSpeakRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
@@ -29,7 +29,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		super(vocalServer.getServer(), client);
 
 		// Registering event handler
-		client.addRequestHandler(VoxyIdentifiers.PLAYER_SPEAK, this::onPlayerSpeakEvent);
+		client.addRequestHandler(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, this::onPlayerSpeakEvent);
 
 		this.vocalServer = vocalServer;
 
@@ -81,14 +81,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		if (!event.getReceivers().contains(player.getExternal()))
 			return;
 
-		String name = event.getPlayer().getName();
-		byte algorithm = event.getAlgorithm();
-		float left = event.getLeft();
-		float right = event.getRight();
-		float global = event.getGlobal();
-		PlayerSpeakRequest request = new PlayerSpeakRequest(name, event.getSample(), algorithm, left, right, global);
-
-		send(VoxyIdentifiers.PLAYER_SPEAK, request);
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(event.getPlayer().getName(), event.getSample(), event.getAlgorithm()));
 	}
 
 	/**
@@ -158,7 +151,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 * @param payload    The object that gather properties about player's audio sample.
 	 */
 	private void onPlayerSpeakEvent(IProtocolConnection connection, int messageID, Object payload) {
-		if (!(payload instanceof PlayerSpeakRequest request))
+		if (!(payload instanceof PlayerAudioStreamContentRequest request))
 			return;
 
 		if (!request.getName().equals(player.getName())) {
