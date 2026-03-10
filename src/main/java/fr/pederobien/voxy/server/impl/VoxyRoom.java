@@ -9,31 +9,31 @@ import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyRoom implements IVoxyRoom, IEventListener {
-	private final VoxyRoomImpl roomImpl;
+	private final VoxyRoomImpl impl;
 
 	/**
 	 * Creates a room where players can speak together.
 	 *
-	 * @param roomImpl The room implementation.
+	 * @param impl The room implementation.
 	 */
-	public VoxyRoom(VoxyRoomImpl roomImpl) {
-		this.roomImpl = roomImpl;
+	public VoxyRoom(VoxyRoomImpl impl) {
+		this.impl = impl;
 	}
 
 	@Override
 	public IVoxyServer getServer() {
-		return roomImpl.getServer().getExternal();
+		return impl.getServer().getExternal();
 	}
 
 	@Override
 	public String getName() {
-		return roomImpl.getName();
+		return impl.getName();
 	}
 
 	@Override
 	public boolean setName(String name) {
 		RenameRoomPrevent preEvent = new RenameRoomPrevent(this, name);
-		EventManager.callEvent(preEvent, () -> roomImpl.setName(name));
+		EventManager.callEvent(preEvent, () -> impl.setName(name));
 
 		// Event not cancelled to the room has been renamed.
 		return !preEvent.isCancelled();
@@ -41,16 +41,16 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 
 	@Override
 	public IPlayerList getPlayers() {
-		return roomImpl.getPlayers().getExternal();
+		return impl.getPlayers().getExternal();
 	}
 
 	@Override
 	public void setPlayBack(boolean playBack) {
-		roomImpl.setPlayBack(playBack);
+		impl.setPlayBack(playBack);
 	}
 
 	@Override
 	public String toString() {
-		return roomImpl.toString();
+		return impl.toString();
 	}
 }

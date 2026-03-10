@@ -37,6 +37,11 @@ public interface IRoomList {
 	Optional<IVoxyRoom> get(String name);
 
 	/**
+	 * @return The number of rooms in the underlying list.
+	 */
+	int size();
+
+	/**
 	 * @return An unmodifiable list containing the rooms registered in this list.
 	 */
 	List<IVoxyRoom> toList();

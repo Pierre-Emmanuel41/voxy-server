@@ -11,33 +11,33 @@ import fr.pederobien.voxy.server.interfaces.IPlayerList;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class PlayerList implements IPlayerList {
-	private final PlayerListImpl listImpl;
+	private final PlayerListImpl impl;
 
 	/**
 	 * Creates a players list.
 	 * 
-	 * @param listImpl The implementation of the players list.
+	 * @param impl The implementation of the players list.
 	 */
-	public PlayerList(PlayerListImpl listImpl) {
-		this.listImpl = listImpl;
+	public PlayerList(PlayerListImpl impl) {
+		this.impl = impl;
 	}
 
 	@Override
 	public boolean add(String name) {
 
 		// A player is already registered
-		if (listImpl.getByName(name) != null)
+		if (impl.getByName(name) != null)
 			return false;
 
-		VoxyPlayerImpl playerImpl = listImpl.getServer().getPlayerByName(name);
+		VoxyPlayerImpl player = impl.getServer().getPlayerByName(name);
 
 		// The player does not exist
-		if (playerImpl == null)
+		if (player == null)
 			return false;
 
 		// Notifying first that a player is about to join a room, if event not cancelled then the player is added
-		JoinRoomPreEvent preEvent = new JoinRoomPreEvent(listImpl.getRoomImpl().getExternal(), playerImpl.getExternal());
-		EventManager.callEvent(preEvent, () -> listImpl.add(playerImpl));
+		JoinRoomPreEvent preEvent = new JoinRoomPreEvent(impl.getRoomImpl().getExternal(), player.getExternal());
+		EventManager.callEvent(preEvent, () -> impl.add(player));
 
 		// Event not cancelled so player added
 		return !preEvent.isCancelled();
@@ -47,32 +47,37 @@ public class PlayerList implements IPlayerList {
 	public boolean remove(String name) {
 
 		// No player registered
-		if (listImpl.getByName(name) == null)
+		if (impl.getByName(name) == null)
 			return false;
 
-		VoxyPlayerImpl playerImpl = listImpl.getServer().getPlayerByName(name);
+		VoxyPlayerImpl player = impl.getServer().getPlayerByName(name);
 
 		// The player does not exist
-		if (playerImpl == null)
+		if (player == null)
 			return false;
 
-		listImpl.remove(playerImpl);
+		impl.remove(player);
 		return true;
 	}
 
 	@Override
 	public void removeAll() {
-		listImpl.removeAll();
+		impl.removeAll();
 	}
 
 	@Override
 	public Optional<IVoxyPlayer> get(String name) {
-		VoxyPlayerImpl playerImpl = listImpl.getByName(name);
-		return playerImpl == null ? Optional.empty() : Optional.of(playerImpl.getExternal());
+		VoxyPlayerImpl player = impl.getByName(name);
+		return Optional.ofNullable(player == null ? null : player.getExternal());
+	}
+
+	@Override
+	public int size() {
+		return impl.size();
 	}
 
 	@Override
 	public List<IVoxyPlayer> toList() {
-		return listImpl.toList();
+		return impl.toList();
 	}
 }

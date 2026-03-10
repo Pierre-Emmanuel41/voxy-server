@@ -100,6 +100,13 @@ public class RoomListImpl extends ServerElement {
 	}
 
 	/**
+	 * @return The number of rooms in the underlying list.
+	 */
+	public int size() {
+		return rooms.size();
+	}
+
+	/**
 	 * @return The list of rooms to use externally.
 	 */
 	public List<IVoxyRoom> toList() {

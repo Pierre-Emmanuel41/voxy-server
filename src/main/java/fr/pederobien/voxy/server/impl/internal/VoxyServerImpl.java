@@ -2,6 +2,7 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import fr.pederobien.communication.impl.EthernetEndPoint;
@@ -9,6 +10,9 @@ import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.interfaces.IEthernetEndPoint;
 import fr.pederobien.communication.testing.tools.SimpleCertificate;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
+import fr.pederobien.messenger.event.ProtocolServerCloseEvent;
+import fr.pederobien.messenger.event.ProtocolServerDisposeEvent;
+import fr.pederobien.messenger.event.ProtocolServerOpenEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.ProtocolServerConfig;
 import fr.pederobien.messenger.interfaces.server.IProtocolServer;
@@ -17,7 +21,11 @@ import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
+import fr.pederobien.voxy.server.event.VoxyServerCloseEvent;
+import fr.pederobien.voxy.server.event.VoxyServerDisposeEvent;
+import fr.pederobien.voxy.server.event.VoxyServerOpenEvent;
 import fr.pederobien.voxy.server.impl.VoxyServer;
+import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyServerImpl implements IEventListener {
@@ -70,29 +78,41 @@ public class VoxyServerImpl implements IEventListener {
 
 	/**
 	 * Open the server to let the clients connect.
+	 * 
+	 * @return True if the server is successfully opened, false otherwise.
 	 */
-	public void open() {
-		server.open();
+	public boolean open() {
+		AtomicBoolean success = new AtomicBoolean(server.open());
+		if (success.get())
+			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().open()));
 
-		roomsImpl.foreach(room -> room.getVocalServer().open());
+		return success.get();
 	}
 
 	/**
 	 * Close the server, each player currently connected will be kicked.
+	 * 
+	 * @return True if the server is successfully closed, false otherwise.
 	 */
-	public void close() {
-		server.close();
+	public boolean close() {
+		AtomicBoolean success = new AtomicBoolean(server.close());
+		if (success.get())
+			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().close()));
 
-		roomsImpl.foreach(room -> room.getVocalServer().close());
+		return success.get();
 	}
 
 	/**
 	 * Dispose the server, it cannot be re-opened anymore.
+	 * 
+	 * @return True if the server is successfully disposed, false otherwise.
 	 */
-	public void dispose() {
-		server.dispose();
+	public boolean dispose() {
+		AtomicBoolean success = new AtomicBoolean(server.dispose());
+		if (success.get())
+			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().dispose()));
 
-		roomsImpl.foreach(room -> room.getVocalServer().dispose());
+		return success.get();
 	}
 
 	/**
@@ -114,6 +134,19 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public RoomListImpl getRooms() {
 		return roomsImpl;
+	}
+
+	/**
+	 * @return A copy of the underlying list of players connected to the server.
+	 */
+	public List<IVoxyPlayer> getPlayers() {
+		List<IVoxyPlayer> list = new ArrayList<IVoxyPlayer>();
+		synchronized (lock) {
+			for (VoxyPlayerImpl player : players)
+				list.add(player.getExternal());
+		}
+
+		return list;
 	}
 
 	/**
@@ -180,6 +213,30 @@ public class VoxyServerImpl implements IEventListener {
 				// Do nothing
 			}
 		}
+	}
+
+	@EventHandler
+	private void onServerOpen(ProtocolServerOpenEvent event) {
+		if (event.getServer() != server)
+			return;
+
+		EventManager.callEvent(new VoxyServerOpenEvent(external));
+	}
+
+	@EventHandler
+	private void onServerClose(ProtocolServerCloseEvent event) {
+		if (event.getServer() != server)
+			return;
+
+		EventManager.callEvent(new VoxyServerCloseEvent(external));
+	}
+
+	@EventHandler
+	private void onServerDispose(ProtocolServerDisposeEvent event) {
+		if (event.getServer() != server)
+			return;
+
+		EventManager.callEvent(new VoxyServerDisposeEvent(external));
 	}
 
 	/**

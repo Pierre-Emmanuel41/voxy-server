@@ -41,6 +41,11 @@ public interface IPlayerList {
 	Optional<IVoxyPlayer> get(String name);
 
 	/**
+	 * @return The number of players in the room.
+	 */
+	int size();
+
+	/**
 	 * @return A list containing the players registered in this list.
 	 */
 	List<IVoxyPlayer> toList();

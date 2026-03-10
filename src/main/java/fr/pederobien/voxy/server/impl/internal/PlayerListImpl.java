@@ -140,6 +140,13 @@ public class PlayerListImpl extends ServerElement {
 	}
 
 	/**
+	 * @return The number of players in the underlying list.
+	 */
+	public int size() {
+		return players.size();
+	}
+
+	/**
 	 * @return The list of players to use externally.
 	 */
 	public List<IVoxyPlayer> toList() {

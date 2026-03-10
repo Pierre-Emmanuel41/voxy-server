@@ -59,8 +59,13 @@ public class RoomList implements IRoomList {
 
 	@Override
 	public Optional<IVoxyRoom> get(String name) {
-		VoxyRoomImpl roomImpl = impl.getByName(name);
-		return roomImpl == null ? Optional.empty() : Optional.of(roomImpl.getExternal());
+		VoxyRoomImpl room = impl.getByName(name);
+		return Optional.ofNullable(room == null ? null : room.getExternal());
+	}
+
+	@Override
+	public int size() {
+		return impl.size();
 	}
 
 	@Override
