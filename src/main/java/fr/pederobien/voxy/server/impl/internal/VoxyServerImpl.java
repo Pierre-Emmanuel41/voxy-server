@@ -169,6 +169,17 @@ public class VoxyServerImpl implements IEventListener {
 	}
 
 	/**
+	 * Removes the player associated to the given name.
+	 * 
+	 * @param player The player to remove.
+	 */
+	public void remove(VoxyPlayerImpl player) {
+		synchronized (lock) {
+			players.remove(player);
+		}
+	}
+
+	/**
 	 * Check if a player with the given name is registered on the server.
 	 * 
 	 * @param name The player's name to check.

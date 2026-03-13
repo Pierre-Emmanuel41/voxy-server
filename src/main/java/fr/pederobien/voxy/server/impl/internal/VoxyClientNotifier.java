@@ -163,6 +163,7 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 			return;
 
 		info("Connection lost with %s", player.getName());
+		getServer().remove(player);
 
 		// Unregistering from events
 		EventManager.unregisterListener(this);
