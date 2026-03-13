@@ -39,8 +39,7 @@ public class ClientWrapper extends ServerElement {
 	}
 
 	/**
-	 * Answers to the remote with ACKNOWLEDGMENT request identifier and CANCELLED
-	 * error code.
+	 * Answers to the remote with ACKNOWLEDGMENT request identifier and CANCELLED error code.
 	 * 
 	 * @param messageID  The identifier of the message received from the remote.
 	 * @param identifier The identifier to which acknowledging.
@@ -50,8 +49,7 @@ public class ClientWrapper extends ServerElement {
 	}
 
 	/**
-	 * Answers to the remote with ACKNOWLEDGMENT request identifier and CANCELLED
-	 * error code.
+	 * Answers to the remote with ACKNOWLEDGMENT request identifier and CANCELLED error code.
 	 * 
 	 * @param messageID  The identifier of the message received from the remote.
 	 * @param identifier The identifier to which acknowledging.
@@ -61,8 +59,7 @@ public class ClientWrapper extends ServerElement {
 	}
 
 	/**
-	 * Answers to the remote with ACKNOWLEDGMENT request identifier and NO_ERROR
-	 * error code.
+	 * Answers to the remote with ACKNOWLEDGMENT request identifier and NO_ERROR error code.
 	 * 
 	 * @param messageID  The identifier of the message received from the remote.
 	 * @param identifier The identifier to which acknowledging.
@@ -97,8 +94,7 @@ public class ClientWrapper extends ServerElement {
 		} catch (Exception e) {
 			// IllegalStateException means connection has been closed
 			if (!(e instanceof IllegalStateException))
-				error("An exception occurred while sending a request to client %s, message: %s", client,
-						e.getMessage());
+				error("An exception occurred while sending a request to client %s, message: %s", client, e.getMessage());
 		}
 	}
 
@@ -122,27 +118,25 @@ public class ClientWrapper extends ServerElement {
 	}
 
 	/**
-	 * Creates a request associated to the given identifier, if supported by at
-	 * least one protocol, and set its error code and payload.
+	 * Creates a request associated to the given identifier, if supported by at least one protocol, and set its error code and
+	 * payload.
 	 *
 	 * @param identifier The request identifier.
 	 * @param error      The request error.
 	 * @param payload    The request payload.
-	 * @return The request ready to be sent to the server or null if the identifier
-	 *         is not supported.
+	 * @return The request ready to be sent to the server or null if the identifier is not supported.
 	 */
 	protected IRequestMessage getRequest(IIdentifier identifier, IError error, Object payload) {
 		return client.getRequest(identifier, error, payload);
 	}
 
 	/**
-	 * Creates a request associated to the given identifier, if supported by at
-	 * least one protocol, and set its error code and payload.
+	 * Creates a request associated to the given identifier, if supported by at least one protocol, and set its error code and
+	 * payload.
 	 *
 	 * @param identifier The request identifier.
 	 * @param payload    The request payload.
-	 * @return The request ready to be sent to the server or null if the identifier
-	 *         is not supported.
+	 * @return The request ready to be sent to the server or null if the identifier is not supported.
 	 */
 	protected IRequestMessage getRequest(IIdentifier identifier, Object payload) {
 		return getRequest(identifier, VoxyErrors.NO_ERROR, payload);
@@ -160,12 +154,14 @@ public class ClientWrapper extends ServerElement {
 			return (T) client.parse(data).getPayload();
 		} catch (ClassCastException e) {
 			return null;
+		} catch (Exception e) {
+			error("An exception occurred while casting request payload: %s", e.getMessage());
+			return null;
 		}
 	}
 
 	/**
-	 * Answers to the remote with ACKNOWLEDGMENT request identifier and the given
-	 * error code.
+	 * Answers to the remote with ACKNOWLEDGMENT request identifier and the given error code.
 	 * 
 	 * @param messageID  The identifier of the message received from the remote.
 	 * @param identifier The identifier to which acknowledging.
