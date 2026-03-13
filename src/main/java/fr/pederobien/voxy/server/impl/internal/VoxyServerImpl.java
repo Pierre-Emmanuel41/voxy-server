@@ -96,6 +96,8 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public boolean close() {
 		AtomicBoolean success = new AtomicBoolean(server.close());
+		players.clear();
+
 		if (success.get())
 			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().close()));
 
