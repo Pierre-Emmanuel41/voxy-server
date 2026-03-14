@@ -14,6 +14,7 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
+import fr.pederobien.voxy.common.impl.requests.JoinRoomPendingRequest;
 import fr.pederobien.voxy.common.impl.requests.JoinRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.LeaveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerDeafRequest;
@@ -26,6 +27,7 @@ import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest.PlayerInfo;
 import fr.pederobien.voxy.common.impl.requests.ServerPropertiesRequest.RoomInfo;
 import fr.pederobien.voxy.server.event.AddRoomPostEvent;
+import fr.pederobien.voxy.server.event.JoinRoomPendingEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
@@ -79,6 +81,14 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 		return player;
 	}
 
+	/**
+	 * Unregisters this notifier from server's event.
+	 */
+	protected void onServerClosed() {
+		debug("Unregistering %s's Client", player.getName());
+		EventManager.unregisterListener(this);
+	}
+
 	@EventHandler
 	private void onRoomAdded(AddRoomPostEvent event) {
 		if (event.getServer() != getServer().getExternal())
@@ -106,6 +116,18 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 
 		// Notifying the remote that a room has been renamed
 		send(VoxyIdentifiers.RENAME_ROOM, new RenameRoomRequest(event.getOldName(), event.getRoom().getName()));
+	}
+
+	@EventHandler
+	private void onPlayerJoinedRoomPending(JoinRoomPendingEvent event) {
+		if (event.getRoom().getServer() != getServer().getExternal())
+			return;
+
+		if (event.getPlayer() != getPlayer().getExternal())
+			return;
+
+		// Notifying the remote a player joined the pending queue of a room
+		send(VoxyIdentifiers.JOIN_ROOM_PENDING, new JoinRoomPendingRequest(event.getRoom().getName(), event.getPlayer().getName()));
 	}
 
 	@EventHandler

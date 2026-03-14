@@ -37,7 +37,7 @@ public class PlayerList implements IPlayerList {
 
 		// Notifying first that a player is about to join a room, if event not cancelled then the player is added
 		JoinRoomPreEvent preEvent = new JoinRoomPreEvent(impl.getRoomImpl().getExternal(), player.getExternal());
-		EventManager.callEvent(preEvent, () -> impl.add(player));
+		EventManager.callEvent(preEvent, () -> impl.addPending(player));
 
 		// Event not cancelled so player added
 		return !preEvent.isCancelled();

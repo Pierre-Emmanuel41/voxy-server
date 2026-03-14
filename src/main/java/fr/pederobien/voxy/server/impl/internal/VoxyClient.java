@@ -43,6 +43,13 @@ public class VoxyClient implements IEventListener {
 		notifier.initialize(postInitialization);
 	}
 
+	/**
+	 * Unregisters this client from server's event.
+	 */
+	public void onServerClosed() {
+		notifier.onServerClosed();
+	}
+
 	@Override
 	public String toString() {
 		return notifier.getClient().toString();

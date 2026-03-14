@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import fr.pederobien.utils.event.EventManager;
+import fr.pederobien.voxy.server.event.JoinRoomPendingEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.impl.PlayerList;
@@ -44,6 +45,7 @@ public class PlayerListImpl extends ServerElement {
 	public void addPending(VoxyPlayerImpl player) {
 		synchronized (lock) {
 			pendings.add(player);
+			EventManager.callEvent(new JoinRoomPendingEvent(roomImpl.getExternal(), player.getExternal()));
 		}
 	}
 

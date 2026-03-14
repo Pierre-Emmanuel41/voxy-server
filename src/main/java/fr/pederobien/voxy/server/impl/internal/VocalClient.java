@@ -2,6 +2,7 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.function.Consumer;
 
+import fr.pederobien.messenger.event.ProtocolConnectionUnstableEvent;
 import fr.pederobien.messenger.interfaces.IProtocolConnection;
 import fr.pederobien.messenger.interfaces.IRequestMessage;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;
@@ -11,8 +12,8 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
-import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
@@ -82,6 +83,15 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 			return;
 
 		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(event.getPlayer().getName(), event.getSample(), event.getAlgorithm()));
+	}
+
+	@EventHandler
+	private void onConnectionUnstable(ProtocolConnectionUnstableEvent event) {
+		if (event.getConnection() != getClient().getConnection())
+			return;
+
+		// Removing player from room
+		vocalServer.getRoom().getPlayers().remove(player);
 	}
 
 	/**

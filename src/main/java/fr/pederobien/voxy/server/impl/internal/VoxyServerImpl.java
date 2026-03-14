@@ -33,7 +33,7 @@ public class VoxyServerImpl implements IEventListener {
 	private final ProtocolServerConfig<IEthernetEndPoint> config;
 	private final IProtocolServer server;
 	private final RoomListImpl roomsImpl;
-	private final List<VoxyPlayerImpl> players;
+	private final List<VoxyClient> clients;
 	private final Object lock;
 
 	private final IVoxyServer external;
@@ -56,7 +56,7 @@ public class VoxyServerImpl implements IEventListener {
 		server = Messenger.createTcpServer(config);
 
 		roomsImpl = new RoomListImpl(this);
-		players = new ArrayList<VoxyPlayerImpl>();
+		clients = new ArrayList<VoxyClient>();
 		lock = new Object();
 
 		external = new VoxyServer(this);
@@ -96,7 +96,13 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public boolean close() {
 		AtomicBoolean success = new AtomicBoolean(server.close());
-		players.clear();
+
+		// Notifying each client that the server is closing
+		for (VoxyClient client : clients)
+			client.onServerClosed();
+
+		// Clearing the list of clients
+		clients.clear();
 
 		if (success.get())
 			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().close()));
@@ -144,8 +150,8 @@ public class VoxyServerImpl implements IEventListener {
 	public List<IVoxyPlayer> getPlayers() {
 		List<IVoxyPlayer> list = new ArrayList<IVoxyPlayer>();
 		synchronized (lock) {
-			for (VoxyPlayerImpl player : players)
-				list.add(player.getExternal());
+			for (VoxyClient client : clients)
+				list.add(client.getPlayer().getExternal());
 		}
 
 		return list;
@@ -160,9 +166,9 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public VoxyPlayerImpl getPlayerByName(String name) {
 		synchronized (lock) {
-			for (VoxyPlayerImpl playerImpl : players)
-				if (playerImpl.getName().equals(name))
-					return playerImpl;
+			for (VoxyClient client : clients)
+				if (client.getPlayer().getName().equals(name))
+					return client.getPlayer();
 		}
 
 		return null;
@@ -175,7 +181,11 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void remove(VoxyPlayerImpl player) {
 		synchronized (lock) {
-			players.remove(player);
+			for (int i = 0; i < clients.size(); i++)
+				if (clients.get(i).getPlayer() == player) {
+					clients.remove(i);
+					break;
+				}
 		}
 	}
 
@@ -207,7 +217,7 @@ public class VoxyServerImpl implements IEventListener {
 			Consumer<Boolean> callback = initialized -> {
 				if (initialized) {
 					info("Player %s joined the server", client.getPlayer().getName());
-					players.add(client.getPlayer());
+					clients.add(client);
 				} else {
 					info("Failure to initialize connection with client %s, disposing connection", client);
 					client.dispose();

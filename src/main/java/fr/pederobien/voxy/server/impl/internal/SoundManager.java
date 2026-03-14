@@ -3,13 +3,14 @@ package fr.pederobien.voxy.server.impl.internal;
 import java.util.List;
 
 import fr.pederobien.utils.event.EventManager;
+import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPreEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class SoundManager {
 	private final PlayerListImpl players;
-	private boolean playBack;
+	private boolean playback;
 
 	/**
 	 * Creates a sound manager responsible to dispatch player's audio sample.
@@ -19,16 +20,17 @@ public class SoundManager {
 	public SoundManager(PlayerListImpl players) {
 		this.players = players;
 
-		playBack = false;
+		playback = false;
 	}
 
 	/**
 	 * Enable or disable the play back. When player back is enabled, a player will here back the audio samples sent to the server.
 	 * 
-	 * @param playBack True to enable play back, false to disable.
+	 * @param playback True to enable play back, false to disable.
 	 */
-	public void setPlayBack(boolean playBack) {
-		this.playBack = playBack;
+	public void setPlayBack(boolean playback) {
+		Logger.debug("Playback %s on room %s", playback ? "enabled" : "disabled", players.getRoomImpl().getName());
+		this.playback = playback;
 	}
 
 	/**
@@ -56,7 +58,7 @@ public class SoundManager {
 			return false;
 
 		if (player.equals(source))
-			return playBack;
+			return playback;
 
 		if (source.isMuteBy(player))
 			return false;
