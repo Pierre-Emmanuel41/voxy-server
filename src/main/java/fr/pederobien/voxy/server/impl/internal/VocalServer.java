@@ -75,6 +75,8 @@ public class VocalServer extends ServerElement implements IEventListener {
 	 * @return True if the server is in correct state to be closed, false otherwise.
 	 */
 	public boolean close() {
+		clients.clear();
+
 		return server.close();
 	}
 
