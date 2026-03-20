@@ -118,10 +118,10 @@ public class PlayerListImpl extends ServerElement {
 
 		synchronized (lock) {
 			players.clear();
-
-			for (VoxyPlayerImpl playerImpl : copy)
-				EventManager.callEvent(new LeaveRoomPostEvent(roomImpl.getExternal(), playerImpl.getExternal()));
 		}
+
+		for (VoxyPlayerImpl playerImpl : copy)
+			EventManager.callEvent(new LeaveRoomPostEvent(roomImpl.getExternal(), playerImpl.getExternal()));
 	}
 
 	/**
