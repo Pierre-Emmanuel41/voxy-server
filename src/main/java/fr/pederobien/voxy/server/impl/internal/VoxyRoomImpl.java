@@ -113,6 +113,16 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 		soundManager.onPlayerIsSpeaking(source, sample, algorithm);
 	}
 
+	/**
+	 * Close the underlying vocal server and clear the players list.
+	 * 
+	 * @return True if the vocal server has been closed successfully.
+	 */
+	public boolean onServerClosed() {
+		players.removeAll();
+		return vocalServer.close();
+	}
+
 	@EventHandler
 	private void onRoomRemoved(RemoveRoomPostEvent event) {
 		if (event.getRoom() != this)
