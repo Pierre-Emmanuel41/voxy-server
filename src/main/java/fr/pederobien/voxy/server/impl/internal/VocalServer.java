@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import fr.pederobien.communication.impl.EthernetEndPoint;
 import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.interfaces.IEthernetEndPoint;
-import fr.pederobien.communication.testing.tools.SimpleCertificate;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.ProtocolServerConfig;
@@ -22,7 +21,7 @@ import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 
 public class VocalServer extends ServerElement implements IEventListener {
-	private final VoxyRoomImpl roomImpl;
+	private final VoxyRoomImpl room;
 	private final ProtocolServerConfig<IEthernetEndPoint> config;
 	private final IProtocolServer server;
 	private final List<VocalClient> clients;
@@ -31,22 +30,17 @@ public class VocalServer extends ServerElement implements IEventListener {
 	/**
 	 * Creates a vocal server.
 	 * 
-	 * @param roomImpl The implementation of the room associated to this vocal server.
+	 * @param room The implementation of the room associated to this vocal server.
 	 */
-	protected VocalServer(VoxyRoomImpl roomImpl) {
-		super(roomImpl.getServer());
+	protected VocalServer(VoxyRoomImpl room) {
+		super(room.getServer());
 
-		this.roomImpl = roomImpl;
+		this.room = room;
 
-		String serverName = String.format("%s-VocalServer", roomImpl.getName());
+		String serverName = String.format("%s-VocalServer", room.getName());
 		config = Messenger.createServerConfig(VoxyProtocolManager.instance(), serverName, new EthernetEndPoint(0));
-
-		// TODO: Replace SimpleCertificate by a proper one
-		config.setLayerInitializer(() -> new AesSafeLayerInitializer(new SimpleCertificate()));
-
-		// The name to use when a client logs
+		config.setLayerInitializer(() -> new AesSafeLayerInitializer(room.getServer().getCertificate()));
 		config.setConnectionName("VoxyVocalClient");
-
 		server = Messenger.createUdpServer(config);
 
 		clients = new ArrayList<VocalClient>();
@@ -100,7 +94,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 	 * @return The room implementation associated to this vocal server.
 	 */
 	public VoxyRoomImpl getRoom() {
-		return roomImpl;
+		return room;
 	}
 
 	@EventHandler
@@ -118,8 +112,8 @@ public class VocalServer extends ServerElement implements IEventListener {
 					clients.add(client);
 				}
 
-				roomImpl.getPlayers().validate(client.getPlayer());
-				info("Player %s joined %s's vocal server", client.getPlayer().getName(), roomImpl.getName());
+				room.getPlayers().validate(client.getPlayer());
+				info("Player %s joined %s's vocal server", client.getPlayer().getName(), room.getName());
 			} else {
 				info("Failure to initialize connection with client %s, disposing connection", client);
 				client.dispose();
@@ -141,7 +135,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 
 	@EventHandler
 	private void onRoomRenamed(RenameRoomPostEvent event) {
-		if (event.getRoom() != roomImpl.getExternal())
+		if (event.getRoom() != room.getExternal())
 			return;
 
 		config.setName(event.getRoom().getName());
@@ -149,7 +143,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 
 	@EventHandler
 	private void onPlayerLeftRoom(LeaveRoomPostEvent event) {
-		if (event.getRoom() != roomImpl.getExternal())
+		if (event.getRoom() != room.getExternal())
 			return;
 
 		// Forcing the disconnection

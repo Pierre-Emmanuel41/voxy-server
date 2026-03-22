@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 import fr.pederobien.communication.impl.EthernetEndPoint;
 import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.interfaces.IEthernetEndPoint;
-import fr.pederobien.communication.testing.tools.SimpleCertificate;
+import fr.pederobien.communication.interfaces.layer.ICertificate;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.event.ProtocolServerCloseEvent;
 import fr.pederobien.messenger.event.ProtocolServerDisposeEvent;
@@ -30,6 +30,7 @@ import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyServerImpl implements IEventListener {
 	private final String name;
+	private final ICertificate certificate;
 	private final ProtocolServerConfig<IEthernetEndPoint> config;
 	private final IProtocolServer server;
 	private final RoomListImpl roomsImpl;
@@ -41,18 +42,17 @@ public class VoxyServerImpl implements IEventListener {
 	/**
 	 * Creates the implementation of a voxy server.
 	 *
-	 * @param name The server's name.
-	 * @param port The port number to open.
+	 * @param name        The server's name.
+	 * @param port        The port number to open.
+	 * @param certificate The certificate to use to sign/authenticate requests.
 	 */
-	protected VoxyServerImpl(String name, int port) {
+	protected VoxyServerImpl(String name, int port, ICertificate certificate) {
 		this.name = name;
+		this.certificate = certificate;
+
 		config = Messenger.createServerConfig(VoxyProtocolManager.instance(), name, new EthernetEndPoint(port));
-
-		// TODO: Replace SimpleCertificate by a proper one
-		config.setLayerInitializer(() -> new AesSafeLayerInitializer(new SimpleCertificate()));
-
+		config.setLayerInitializer(() -> new AesSafeLayerInitializer(certificate));
 		config.setConnectionName("VoxyClient");
-
 		server = Messenger.createTcpServer(config);
 
 		roomsImpl = new RoomListImpl(this);
@@ -200,6 +200,13 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public boolean isRegistered(String name) {
 		return getPlayerByName(name) != null;
+	}
+
+	/**
+	 * @return The certificate to use to sign/authenticate requests.
+	 */
+	public ICertificate getCertificate() {
+		return certificate;
 	}
 
 	/**
