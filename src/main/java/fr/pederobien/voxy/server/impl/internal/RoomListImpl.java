@@ -50,19 +50,20 @@ public class RoomListImpl extends ServerElement {
 	/**
 	 * Removes the room from this list and throws a RemoveRoomPostEvent to notify each client.
 	 * 
-	 * @param name The name of the room to create.
+	 * @param room The implementation of the room to remove.
 	 */
-	public void remove(VoxyRoomImpl roomImpl) {
+	public void remove(VoxyRoomImpl room) {
 		boolean removed;
 		synchronized (lock) {
-			removed = rooms.remove(roomImpl);
+			removed = rooms.remove(room);
 		}
 
 		if (!removed)
 			return;
 
-		info("Room %s has been removed", roomImpl.getName());
-		EventManager.callEvent(new RemoveRoomPostEvent(getServer().getExternal(), roomImpl.getExternal()));
+		room.getPlayers().removeAll();
+		info("Room %s has been removed", room.getName());
+		EventManager.callEvent(new RemoveRoomPostEvent(getServer().getExternal(), room.getExternal()));
 	}
 
 	/**
