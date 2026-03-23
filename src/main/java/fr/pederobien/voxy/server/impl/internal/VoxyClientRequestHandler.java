@@ -187,8 +187,15 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 		// Checking if player is already registered
 		getServer().getRooms().foreach(toCheck -> {
 			VoxyPlayerImpl player = toCheck.getPlayers().getByName(request.getPlayerName());
-			if (player != null)
+			if (player != null) {
 				toCheck.getPlayers().remove(player);
+
+				try {
+					Thread.sleep(100);
+				} catch (Exception e) {
+					// Do nothing
+				}
+			}
 		});
 
 		EventManager.callEvent(new JoinRoomPreEvent(room.getExternal(), player.getExternal()), isCancelled -> {
