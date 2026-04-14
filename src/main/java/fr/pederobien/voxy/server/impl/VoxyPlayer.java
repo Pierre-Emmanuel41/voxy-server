@@ -3,6 +3,8 @@ package fr.pederobien.voxy.server.impl;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
+import fr.pederobien.voxy.server.interfaces.ICoordinates;
+import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
@@ -48,6 +50,16 @@ public class VoxyPlayer implements IVoxyPlayer {
 	@Override
 	public boolean isDeaf() {
 		return impl.isDeaf();
+	}
+
+	@Override
+	public ICoordinates getCoordinates() {
+		return impl.getCoordinates();
+	}
+
+	@Override
+	public ISoundSphere getSoundSphere() {
+		return impl.getSoundSphere();
 	}
 
 	@Override

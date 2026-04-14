@@ -30,4 +30,15 @@ public interface IVoxyPlayer {
 	 * @return True if the player disabled it speakers, false otherwise.
 	 */
 	boolean isDeaf();
+
+	/**
+	 * @return The coordinate that represent the player location in game.
+	 */
+	ICoordinates getCoordinates();
+
+	/**
+	 * @return The sound sphere associated to this player. If another player is inside this sound sphere they will be able to hear
+	 *         each other.
+	 */
+	ISoundSphere getSoundSphere();
 }

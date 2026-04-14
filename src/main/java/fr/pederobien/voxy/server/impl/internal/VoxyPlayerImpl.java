@@ -8,11 +8,15 @@ import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
+import fr.pederobien.voxy.server.interfaces.ICoordinates;
+import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VoxyPlayerImpl extends ServerElement {
 	private final String name;
 	private final List<VoxyPlayerImpl> muteByPlayers;
+	private final ICoordinates coordinates;
+	private final ISoundSphere soundSphere;
 	private boolean isMute;
 	private boolean isDeaf;
 	private Object lock;
@@ -36,6 +40,8 @@ public class VoxyPlayerImpl extends ServerElement {
 
 		lock = new Object();
 		muteByPlayers = new ArrayList<VoxyPlayerImpl>();
+		coordinates = new Coordinates(this);
+		soundSphere = new SoundSphere(this);
 		external = new VoxyPlayer(this);
 	}
 
@@ -116,6 +122,20 @@ public class VoxyPlayerImpl extends ServerElement {
 		this.isDeaf = isDeaf;
 		info("Player %s %s itself", name, isDeaf ? "deaf" : "undeaf");
 		EventManager.callEvent(new VoxyPlayerDeafStatusChangedEvent(external, isDeaf));
+	}
+
+	/**
+	 * @return The coordinate that represent the player location in game.
+	 */
+	public ICoordinates getCoordinates() {
+		return coordinates;
+	}
+
+	/**
+	 * @return The sound sphere associated to this player.
+	 */
+	public ISoundSphere getSoundSphere() {
+		return soundSphere;
 	}
 
 	/**

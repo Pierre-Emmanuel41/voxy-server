@@ -13,8 +13,10 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
@@ -83,6 +85,20 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 			return;
 
 		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(event.getPlayer().getName(), event.getSample(), event.getAlgorithm()));
+	}
+
+	@EventHandler
+	private void onPlayerVolumeChanged(VoxyPlayerVolumesChangedEvent event) {
+		if (event.getListener() != player.getExternal())
+			return;
+
+		Logger.debug("Notifying %s to modify volumes for %s", event.getListener().getName(), event.getPlayer().getName());
+
+		String name = event.getPlayer().getName();
+		float left = event.getVolumes().getLeft();
+		float right = event.getVolumes().getRight();
+		float global = event.getVolumes().getGlobal();
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_VOLUMES, new PlayerAudioStreamVolumesRequest(name, left, right, global));
 	}
 
 	@EventHandler
