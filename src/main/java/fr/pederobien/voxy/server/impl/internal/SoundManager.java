@@ -15,6 +15,7 @@ import fr.pederobien.voxy.server.event.VoxyPlayerCoordinateChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.interfaces.ISoundVolumes;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
@@ -97,6 +98,14 @@ public class SoundManager implements IEventListener {
 
 	@EventHandler
 	private void onPlayerSoundSphereEnableChanged(VoxyPlayerSphereEnableChangedEvent event) {
+		if (players.getByName(event.getPlayer().getName()) == null)
+			return;
+
+		hearTable.updatePlayerVolumes(event.getPlayer());
+	}
+
+	@EventHandler
+	private void onPlayerSoundSphereRadiusChanged(VoxyPlayerSphereRadiusChangedEvent event) {
 		if (players.getByName(event.getPlayer().getName()) == null)
 			return;
 
@@ -219,22 +228,31 @@ public class SoundManager implements IEventListener {
 				}
 
 				// Step 2: Updating volumes for this player if its sound sphere is enabled
-				if (player.getSoundSphere().isEnabled()) {
-					Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(player);
-					if (listeners == null)
-						return;
+				if (player.getSoundSphere().isEnabled())
+					updatePlayerVolumes(player);
+			}
+		}
 
-					for (Map.Entry<IVoxyPlayer, ISoundVolumes> entry : listeners.entrySet()) {
-						ISoundVolumes before = entry.getValue();
-						ISoundVolumes now = player.getSoundSphere().computeVolumes(entry.getKey());
+		/**
+		 * Compute the volumes of the other player for the given player.
+		 * 
+		 * @param player       The player for which the audio volumes of the other players shall be computed.
+		 * @param sphereEnable True if the player's sound sphere is enabled, false otherwise.
+		 */
+		public void updatePlayerVolumes(IVoxyPlayer player) {
+			Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(player);
+			if (listeners == null)
+				return;
 
-						// Checking if volumes has changed enough to notify the client
-						if (checkVolumeChange(before, now)) {
-							entry.setValue(now);
+			for (Map.Entry<IVoxyPlayer, ISoundVolumes> entry : listeners.entrySet()) {
+				ISoundVolumes before = entry.getValue();
+				ISoundVolumes now = player.getSoundSphere().computeVolumes(entry.getKey());
 
-							EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(entry.getKey(), player, now));
-						}
-					}
+				// Checking if volumes has changed enough to notify the client
+				if (checkVolumeChange(before, now)) {
+					entry.setValue(now);
+
+					EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(entry.getKey(), player, now));
 				}
 			}
 		}
