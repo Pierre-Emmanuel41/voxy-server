@@ -17,6 +17,7 @@ import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
 import fr.pederobien.voxy.server.interfaces.ISoundVolumes;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
@@ -109,7 +110,7 @@ public class SoundManager implements IEventListener {
 		if (players.getByName(event.getPlayer().getName()) == null)
 			return;
 
-		hearTable.computeVolumes(event.getPlayer(), true);
+		hearTable.updatePlayerVolumes(event.getPlayer());
 	}
 
 	/**
@@ -221,7 +222,7 @@ public class SoundManager implements IEventListener {
 							if (checkVolumeChange(before, now)) {
 								entry.getValue().put(player, now);
 
-								EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(player, entry.getKey(), now));
+								EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(new VolumeChange(player, entry.getKey(), now)));
 							}
 						}
 					}
@@ -244,6 +245,7 @@ public class SoundManager implements IEventListener {
 			if (listeners == null)
 				return;
 
+			List<VolumeChange> changes = new ArrayList<VolumeChange>();
 			for (Map.Entry<IVoxyPlayer, ISoundVolumes> entry : listeners.entrySet()) {
 				ISoundVolumes before = entry.getValue();
 				ISoundVolumes now = player.getSoundSphere().computeVolumes(entry.getKey());
@@ -251,9 +253,10 @@ public class SoundManager implements IEventListener {
 				// Checking if volumes has changed enough to notify the client
 				if (checkVolumeChange(before, now)) {
 					entry.setValue(now);
-
-					EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(entry.getKey(), player, now));
+					changes.add(new VolumeChange(entry.getKey(), player, now));
 				}
+
+				EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(changes));
 			}
 		}
 

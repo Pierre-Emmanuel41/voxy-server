@@ -1,5 +1,7 @@
 package fr.pederobien.voxy.server.impl.internal;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import fr.pederobien.messenger.event.ProtocolConnectionUnstableEvent;
@@ -14,9 +16,11 @@ import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest.VolumeInfo;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
@@ -89,16 +93,20 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 
 	@EventHandler
 	private void onPlayerVolumeChanged(VoxyPlayerVolumesChangedEvent event) {
-		if (event.getListener() != player.getExternal())
-			return;
+		for (VolumeChange change : event.getChanges()) {
+			if (change.getListener() != player.getExternal())
+				continue;
 
-		Logger.debug("Notifying %s to modify volumes for %s", event.getListener().getName(), event.getPlayer().getName());
+			List<VolumeInfo> volumes = new ArrayList<VolumeInfo>();
 
-		String name = event.getPlayer().getName();
-		float left = event.getVolumes().getLeft();
-		float right = event.getVolumes().getRight();
-		float global = event.getVolumes().getGlobal();
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_VOLUMES, new PlayerAudioStreamVolumesRequest(name, left, right, global));
+			String name = change.getSpeaker().getName();
+			float left = change.getVolumes().getLeft();
+			float right = change.getVolumes().getRight();
+			float global = change.getVolumes().getGlobal();
+			volumes.add(new VolumeInfo(name, left, right, global));
+
+			send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_VOLUMES, new PlayerAudioStreamVolumesRequest(volumes));
+		}
 	}
 
 	@EventHandler
