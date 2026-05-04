@@ -97,6 +97,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 			if (change.getListener() != player.getExternal())
 				continue;
 
+			debug("Notifying %s that volumes has changed for %s", change.getListener().getName(), change.getSpeaker().getName());
 			List<VolumeInfo> volumes = new ArrayList<VolumeInfo>();
 
 			String name = change.getSpeaker().getName();

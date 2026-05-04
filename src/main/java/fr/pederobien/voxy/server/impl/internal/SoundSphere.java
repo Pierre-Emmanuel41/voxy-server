@@ -1,17 +1,17 @@
 package fr.pederobien.voxy.server.impl.internal;
 
 import fr.pederobien.utils.event.EventManager;
-import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
 import fr.pederobien.voxy.server.interfaces.ISoundProfile;
+import fr.pederobien.voxy.server.interfaces.ISoundProfileArgs;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.ISoundVolumes;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class SoundSphere implements ISoundSphere {
-	private final VoxyPlayerImpl player;
+	private final VoxyPlayerImpl center;
 	private boolean isEnabled;
 	private double xRadius;
 	private double yRadius;
@@ -26,7 +26,7 @@ public class SoundSphere implements ISoundSphere {
 	 * @param player The player associated to this sphere.
 	 */
 	public SoundSphere(VoxyPlayerImpl player) {
-		this.player = player;
+		this.center = player;
 
 		isEnabled = false;
 
@@ -47,7 +47,7 @@ public class SoundSphere implements ISoundSphere {
 			return;
 
 		this.isEnabled = isEnabled;
-		EventManager.callEvent(new VoxyPlayerSphereEnableChangedEvent(player.getExternal()));
+		EventManager.callEvent(new VoxyPlayerSphereEnableChangedEvent(center.getExternal()));
 	}
 
 	@Override
@@ -81,7 +81,7 @@ public class SoundSphere implements ISoundSphere {
 		this.zRadius = zRadius < 0 ? 0 : zRadius;
 
 		if (oldXRadius - xRadius != 0 || oldyRadius - yRadius != 0 || oldzRadius - zRadius != 0)
-			EventManager.callEvent(new VoxyPlayerSphereRadiusChangedEvent(player.getExternal()));
+			EventManager.callEvent(new VoxyPlayerSphereRadiusChangedEvent(center.getExternal()));
 	}
 
 	@Override
@@ -105,15 +105,13 @@ public class SoundSphere implements ISoundSphere {
 			return new SoundVolumes(1, 1, 1);
 
 		LocalCoordinates local = toLocalCoordinates(player.getCoordinates());
+		double distance = getDistance(local);
 
-		if (!isInside(local))
-			return new SoundVolumes(0, 0, 0);
+		ISoundProfileArgs args = new SoundProfileArgs(this, center.getName(), player.getName(), local, distance);
+		float left = leftProfile.compute(args);
+		float right = rightProfile.compute(args);
+		float global = globalProfile.compute(args);
 
-		float left = leftProfile.compute(local.getX(), xRadius, local.getY(), yRadius, local.getZ(), zRadius);
-		float right = rightProfile.compute(local.getX(), xRadius, local.getY(), yRadius, local.getZ(), zRadius);
-		float global = globalProfile.compute(local.getX(), xRadius, local.getY(), yRadius, local.getZ(), zRadius);
-
-		Logger.debug("%s -> %s: Volumes=[left=%s,right=%s,global=%s]", player.getName(), this.player.getName(), left, right, global);
 		return new SoundVolumes(left, right, global);
 	}
 
@@ -131,57 +129,63 @@ public class SoundSphere implements ISoundSphere {
 	}
 
 	/**
-	 * Check if the coordinates in the local base is inside this sound sphere.
+	 * Compute the distance between the point associated to the given position and the center of this sphere.
 	 * 
-	 * @param local The coordinates of a point in the local base.
-	 * @return True if the coordinates is inside this sphere, false otherwise.
+	 * @param local The coordinates of a player relative to the center of this oriented ellipsoid.
+	 * @return The distance of a player relative to the center of this ellipsoid.
 	 */
-	private boolean isInside(LocalCoordinates local) {
+	private double getDistance(LocalCoordinates local) {
 		double x = (local.getX() * local.getX()) / (xRadius * xRadius);
 		double y = (local.getY() * local.getY()) / (yRadius * yRadius);
 		double z = (local.getZ() * local.getZ()) / (zRadius * zRadius);
-		double sum = x + y + z;
-
-		// Player is definitely inside the sphere
-		if (sum < 1)
-			return true;
-
-		double substraction = sum - 1.0;
-		if (substraction < 0)
-			substraction = -substraction;
-
-		// Sphere boundary thickness
-		return substraction < 1e-9;
+		return x + y + z;
 	}
 
 	/**
 	 * @return The coordinates of the center of this sound sphere.
 	 */
 	private ICoordinates getCenterCoordinates() {
-		return player.getCoordinates();
+		return center.getCoordinates();
 	}
 
-	private class LocalCoordinates {
-		private double x;
-		private double y;
-		private double z;
+	private class SoundProfileArgs implements ISoundProfileArgs {
+		private final ISoundSphere soundSphere;
+		private final String listener;
+		private final String speaker;
+		private final LocalCoordinates local;
+		private final double distance;
 
-		public LocalCoordinates(double x, double y, double z) {
-			this.x = x;
-			this.y = y;
-			this.z = z;
+		public SoundProfileArgs(ISoundSphere soundSphere, String listener, String speaker, LocalCoordinates local, double distance) {
+			this.soundSphere = soundSphere;
+			this.listener = listener;
+			this.speaker = speaker;
+			this.local = local;
+			this.distance = distance;
 		}
 
-		public double getX() {
-			return x;
+		@Override
+		public ISoundSphere getSoundSphere() {
+			return soundSphere;
 		}
 
-		public double getY() {
-			return y;
+		@Override
+		public String getListener() {
+			return listener;
 		}
 
-		public double getZ() {
-			return z;
+		@Override
+		public String getSpeaker() {
+			return speaker;
+		}
+
+		@Override
+		public LocalCoordinates getLocalCoordinates() {
+			return local;
+		}
+
+		@Override
+		public double getDistance() {
+			return distance;
 		}
 	}
 
@@ -203,16 +207,16 @@ public class SoundSphere implements ISoundSphere {
 			double cr = MathHelper.getCosinus(-roll), sr = MathHelper.getSinus(-roll);
 
 			m00 = cp * cy;
-			m01 = cr * sp * cy - sr * sy;
-			m02 = sr * sp * cy + cr * sy;
+			m01 = cy * sp * sr - sy * cr;
+			m02 = cy * sp * cr + sy * sr;
 
-			m10 = cp * sy;
-			m11 = cr * sp * sy + sr * cy;
-			m12 = sr * sp * sy - cr * cy;
+			m10 = sy * cp;
+			m11 = sy * sp * sr + cy * cr;
+			m12 = sy * sp * cr - cy * sr;
 
 			m20 = -sp;
-			m21 = cp * cr;
-			m22 = cp * sr;
+			m21 = cp * sr;
+			m22 = cp * cr;
 		}
 
 		/**

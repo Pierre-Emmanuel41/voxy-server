@@ -102,6 +102,7 @@ public class SoundManager implements IEventListener {
 		if (players.getByName(event.getPlayer().getName()) == null)
 			return;
 
+		Logger.debug("%s's sound sphere %s", event.getPlayer().getSoundSphere().isEnabled() ? "enabled" : "disabled");
 		hearTable.updatePlayerVolumes(event.getPlayer());
 	}
 
@@ -110,7 +111,14 @@ public class SoundManager implements IEventListener {
 		if (players.getByName(event.getPlayer().getName()) == null)
 			return;
 
-		hearTable.updatePlayerVolumes(event.getPlayer());
+		IVoxyPlayer player = event.getPlayer();
+		double xRadius = event.getPlayer().getSoundSphere().getXRadius();
+		double yRadius = event.getPlayer().getSoundSphere().getYRadius();
+		double zRadius = event.getPlayer().getSoundSphere().getZRadius();
+		String format = "%s's sound sphere radius are now: [xRadius=%s, yRadius=%s, zRadius=%s]";
+		Logger.debug(format, player.getName(), xRadius, yRadius, zRadius);
+
+		hearTable.updatePlayerVolumes(player);
 	}
 
 	/**
@@ -193,11 +201,11 @@ public class SoundManager implements IEventListener {
 		 */
 		public boolean canHear(IVoxyPlayer speaker, IVoxyPlayer listener) {
 			synchronized (lock) {
-				Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(speaker);
+				Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(listener);
 				if (listeners == null)
 					return false;
 
-				ISoundVolumes volumes = listeners.get(listener);
+				ISoundVolumes volumes = listeners.get(speaker);
 				return volumes == null ? false : volumes.getGlobal() != 0;
 			}
 		}
@@ -237,27 +245,31 @@ public class SoundManager implements IEventListener {
 		/**
 		 * Compute the volumes of the other player for the given player.
 		 * 
-		 * @param player       The player for which the audio volumes of the other players shall be computed.
+		 * @param listener     The player for which the audio volumes of the other players shall be computed.
 		 * @param sphereEnable True if the player's sound sphere is enabled, false otherwise.
 		 */
-		public void updatePlayerVolumes(IVoxyPlayer player) {
-			Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(player);
-			if (listeners == null)
-				return;
-
+		public void updatePlayerVolumes(IVoxyPlayer listener) {
 			List<VolumeChange> changes = new ArrayList<VolumeChange>();
-			for (Map.Entry<IVoxyPlayer, ISoundVolumes> entry : listeners.entrySet()) {
-				ISoundVolumes before = entry.getValue();
-				ISoundVolumes now = player.getSoundSphere().computeVolumes(entry.getKey());
+			synchronized (lock) {
+				Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(listener);
+				if (listeners == null)
+					return;
 
-				// Checking if volumes has changed enough to notify the client
-				if (checkVolumeChange(before, now)) {
-					entry.setValue(now);
-					changes.add(new VolumeChange(entry.getKey(), player, now));
+				for (Map.Entry<IVoxyPlayer, ISoundVolumes> entry : listeners.entrySet()) {
+					IVoxyPlayer speaker = entry.getKey();
+					ISoundVolumes before = entry.getValue();
+					ISoundVolumes now = listener.getSoundSphere().computeVolumes(speaker);
+
+					// Checking if volumes has changed enough to notify the client
+					if (checkVolumeChange(before, now)) {
+						entry.setValue(now);
+						changes.add(new VolumeChange(speaker, listener, now));
+					}
 				}
-
-				EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(changes));
 			}
+
+			if (!changes.isEmpty())
+				EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(changes));
 		}
 
 		/**

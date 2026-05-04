@@ -5,13 +5,21 @@ public interface ISoundProfile {
 	/**
 	 * Compute the volume value for a point located at x, y, z meter from the center of the sound sphere.
 	 * 
-	 * @param x       The x value of the point.
-	 * @param xRadius The radius on x-Axis of the sound sphere.
-	 * @param y       The y value of the point.
-	 * @param yRadius The radius on y-Axis of the sound sphere.
-	 * @param z       The z value of the point.
-	 * @param zRadius The radius on z-Axis of the sound sphere.
-	 * @return The computed volume, it shall be greater or equals to 0.
+	 * @param args The object that gather useful parameters to compute an audio volume.
 	 */
-	float compute(double x, double xRadius, double y, double yRadius, double z, double zRadius);
+	float compute(ISoundProfileArgs args);
+
+	/**
+	 * Compute the square root of a given number.
+	 * 
+	 * @param number The number.
+	 * @return The square root of the given number.
+	 */
+	default float fastSqrt(double number) {
+		// Bitwise approximation for speed
+		double sqrt = Double.longBitsToDouble(((Double.doubleToLongBits(number) - (1l << 52)) >> 1) + (1l << 61));
+
+		// One Newton-Raphson iteration to improve accuracy
+		return (float) ((sqrt + number / sqrt) / 2.0);
+	}
 }
