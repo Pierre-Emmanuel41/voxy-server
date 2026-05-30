@@ -28,7 +28,7 @@ public class ServerElement {
 	 * @param args    The arguments of the message.
 	 */
 	protected void debug(String format, Object... args) {
-		Logger.debug("%s - %s", server, String.format(format, args));
+		Logger.debug(3, "%s - %s", server, String.format(format, args));
 	}
 
 	/**

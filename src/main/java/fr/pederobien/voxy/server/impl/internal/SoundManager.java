@@ -46,7 +46,7 @@ public class SoundManager implements IEventListener {
 	 * @param playback True to enable play back, false to disable.
 	 */
 	public void setPlayBack(boolean playback) {
-		Logger.debug("Playback %s on room %s", playback ? "enabled" : "disabled", players.getRoomImpl().getName());
+		debug("Playback %s on room %s", playback ? "enabled" : "disabled", players.getRoomImpl().getName());
 		this.playback = playback;
 	}
 
@@ -102,7 +102,7 @@ public class SoundManager implements IEventListener {
 		if (players.getByName(event.getPlayer().getName()) == null)
 			return;
 
-		Logger.debug("%s's sound sphere %s", event.getPlayer().getSoundSphere().isEnabled() ? "enabled" : "disabled");
+		debug("%s's sound sphere %s", event.getPlayer().getSoundSphere().isEnabled() ? "enabled" : "disabled");
 		hearTable.updatePlayerVolumes(event.getPlayer());
 	}
 
@@ -115,8 +115,9 @@ public class SoundManager implements IEventListener {
 		double xRadius = event.getPlayer().getSoundSphere().getXRadius();
 		double yRadius = event.getPlayer().getSoundSphere().getYRadius();
 		double zRadius = event.getPlayer().getSoundSphere().getZRadius();
+
 		String format = "%s's sound sphere radius are now: [xRadius=%s, yRadius=%s, zRadius=%s]";
-		Logger.debug(format, player.getName(), xRadius, yRadius, zRadius);
+		debug(format, player.getName(), xRadius, yRadius, zRadius);
 
 		hearTable.updatePlayerVolumes(player);
 	}
@@ -139,6 +140,16 @@ public class SoundManager implements IEventListener {
 			return false;
 
 		return hearTable.canHear(speaker.getExternal(), listener.getExternal());
+	}
+
+	/**
+	 * Print a log using DEBUG level
+	 *
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
+	 */
+	private void debug(String format, Object... args) {
+		Logger.debug(3, format, args);
 	}
 
 	private class HearTable {
