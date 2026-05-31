@@ -5,12 +5,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
-import fr.pederobien.communication.impl.EthernetEndPoint;
 import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
-import fr.pederobien.communication.interfaces.IEthernetEndPoint;
+import fr.pederobien.communication.impl.server.ethernet.ServerEthernetEndPoint;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.impl.Messenger;
-import fr.pederobien.messenger.impl.server.ProtocolServerConfig;
+import fr.pederobien.messenger.impl.server.EthernetProtocolServerConfig;
 import fr.pederobien.messenger.interfaces.server.IProtocolServer;
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
@@ -22,7 +21,7 @@ import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 
 public class VocalServer extends ServerElement implements IEventListener {
 	private final VoxyRoomImpl room;
-	private final ProtocolServerConfig<IEthernetEndPoint> config;
+	private final EthernetProtocolServerConfig config;
 	private final IProtocolServer server;
 	private final List<VocalClient> clients;
 	private final Object lock;
@@ -38,10 +37,10 @@ public class VocalServer extends ServerElement implements IEventListener {
 		this.room = room;
 
 		String serverName = String.format("%s-VocalServer", room.getName());
-		config = Messenger.createServerConfig(VoxyProtocolManager.instance(), serverName, new EthernetEndPoint(0));
+		config = Messenger.createEthernetProtocolServerConfig(VoxyProtocolManager.instance(), serverName, new ServerEthernetEndPoint(0));
 		config.setLayerInitializer(() -> new AesSafeLayerInitializer(room.getServer().getCertificate()));
 		config.setConnectionName("VoxyVocalClient");
-		server = Messenger.createUdpServer(config);
+		server = Messenger.createUdpProtocolServer(config);
 
 		clients = new ArrayList<VocalClient>();
 		lock = new Object();

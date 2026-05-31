@@ -5,16 +5,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import fr.pederobien.communication.impl.EthernetEndPoint;
 import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
-import fr.pederobien.communication.interfaces.IEthernetEndPoint;
+import fr.pederobien.communication.impl.server.ethernet.ServerEthernetEndPoint;
 import fr.pederobien.communication.interfaces.layer.ICertificate;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.event.ProtocolServerCloseEvent;
 import fr.pederobien.messenger.event.ProtocolServerDisposeEvent;
 import fr.pederobien.messenger.event.ProtocolServerOpenEvent;
 import fr.pederobien.messenger.impl.Messenger;
-import fr.pederobien.messenger.impl.server.ProtocolServerConfig;
+import fr.pederobien.messenger.impl.server.EthernetProtocolServerConfig;
 import fr.pederobien.messenger.interfaces.server.IProtocolServer;
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
@@ -31,7 +30,7 @@ import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 public class VoxyServerImpl implements IEventListener {
 	private final String name;
 	private final ICertificate certificate;
-	private final ProtocolServerConfig<IEthernetEndPoint> config;
+	private final EthernetProtocolServerConfig config;
 	private final IProtocolServer server;
 	private final RoomListImpl roomsImpl;
 	private final List<VoxyClient> clients;
@@ -50,10 +49,10 @@ public class VoxyServerImpl implements IEventListener {
 		this.name = name;
 		this.certificate = certificate;
 
-		config = Messenger.createServerConfig(VoxyProtocolManager.instance(), name, new EthernetEndPoint(port));
+		config = Messenger.createEthernetProtocolServerConfig(VoxyProtocolManager.instance(), name, new ServerEthernetEndPoint(port));
 		config.setLayerInitializer(() -> new AesSafeLayerInitializer(certificate));
 		config.setConnectionName("VoxyClient");
-		server = Messenger.createTcpServer(config);
+		server = Messenger.createTcpProtocolServer(config);
 
 		roomsImpl = new RoomListImpl(this);
 		clients = new ArrayList<VoxyClient>();
