@@ -1,6 +1,6 @@
 package fr.pederobien.voxy.server.impl.internal;
 
-import fr.pederobien.communication.interfaces.layer.ICertificate;
+import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
 
 public class Factory {
 
@@ -11,7 +11,7 @@ public class Factory {
 	 * @param port        The port number to open.
 	 * @param certificate The certificate to use to sign/authenticate requests.
 	 */
-	public static VoxyServerImpl createServerImpl(String name, int port, ICertificate certificate) {
-		return new VoxyServerImpl(name, port, certificate);
+	public static VoxyServerImpl createServerImpl(IVoxyServerConfig config) {
+		return new VoxyServerImpl(config);
 	}
 }

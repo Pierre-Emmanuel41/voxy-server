@@ -5,9 +5,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
-import fr.pederobien.communication.impl.server.ethernet.ServerEthernetEndPoint;
-import fr.pederobien.communication.interfaces.layer.ICertificate;
+import fr.pederobien.communication.interfaces.server.IServerEthernetEndPoint;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.event.ProtocolServerCloseEvent;
 import fr.pederobien.messenger.event.ProtocolServerDisposeEvent;
@@ -26,11 +24,10 @@ import fr.pederobien.voxy.server.event.VoxyServerOpenEvent;
 import fr.pederobien.voxy.server.impl.VoxyServer;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
+import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
 
 public class VoxyServerImpl implements IEventListener {
-	private final String name;
-	private final ICertificate certificate;
-	private final EthernetProtocolServerConfig config;
+	private final IVoxyServerConfig config;
 	private final IProtocolServer server;
 	private final RoomListImpl roomsImpl;
 	private final List<VoxyClient> clients;
@@ -45,14 +42,20 @@ public class VoxyServerImpl implements IEventListener {
 	 * @param port        The port number to open.
 	 * @param certificate The certificate to use to sign/authenticate requests.
 	 */
-	protected VoxyServerImpl(String name, int port, ICertificate certificate) {
-		this.name = name;
-		this.certificate = certificate;
+	protected VoxyServerImpl(IVoxyServerConfig config) {
+		this.config = config;
 
-		config = Messenger.createEthernetProtocolServerConfig(VoxyProtocolManager.instance(), name, new ServerEthernetEndPoint(port));
-		config.setLayerInitializer(() -> new AesSafeLayerInitializer(certificate));
-		config.setConnectionName("VoxyClient");
-		server = Messenger.createTcpProtocolServer(config);
+		String name = config.getName();
+		IServerEthernetEndPoint endPoint = config.getTcpConfig().getPoint();
+		EthernetProtocolServerConfig configuration = Messenger.createEthernetServerConfig(VoxyProtocolManager.instance(), name, endPoint);
+		configuration.setConnectionName(name);
+		configuration.setConnectionMaxUnstableCounter(config.getTcpConfig().getConnectionMaxUnstableCounter());
+		configuration.setConnectionHealTime(config.getTcpConfig().getConnectionHealTime());
+		configuration.setLayerInitializer(config.getTcpConfig().getLayerInitializer());
+		configuration.setClientValidator(config.getTcpConfig().getClientValidator());
+		configuration.setServerMaxUnstableCounter(config.getTcpConfig().getServerMaxUnstableCounter());
+		configuration.setServerHealTime(config.getTcpConfig().getServerHealTime());
+		server = Messenger.createTcpServer(configuration);
 
 		roomsImpl = new RoomListImpl(this);
 		clients = new ArrayList<VoxyClient>();
@@ -72,7 +75,14 @@ public class VoxyServerImpl implements IEventListener {
 	 * @return The voxy server name.
 	 */
 	public String getName() {
-		return name;
+		return config.getName();
+	}
+
+	/**
+	 * @return The configuration associated to this voxy server.
+	 */
+	public IVoxyServerConfig getConfig() {
+		return config;
 	}
 
 	/**
@@ -199,13 +209,6 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public boolean isRegistered(String name) {
 		return getPlayerByName(name) != null;
-	}
-
-	/**
-	 * @return The certificate to use to sign/authenticate requests.
-	 */
-	public ICertificate getCertificate() {
-		return certificate;
 	}
 
 	/**

@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
-import fr.pederobien.communication.impl.layer.AesSafeLayerInitializer;
 import fr.pederobien.communication.impl.server.ethernet.ServerEthernetEndPoint;
+import fr.pederobien.communication.interfaces.server.IServerEthernetEndPoint;
 import fr.pederobien.messenger.event.NewProtocolClientEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.EthernetProtocolServerConfig;
@@ -18,10 +18,11 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
+import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
 
 public class VocalServer extends ServerElement implements IEventListener {
 	private final VoxyRoomImpl room;
-	private final EthernetProtocolServerConfig config;
+	private final EthernetProtocolServerConfig configuration;
 	private final IProtocolServer server;
 	private final List<VocalClient> clients;
 	private final Object lock;
@@ -37,10 +38,18 @@ public class VocalServer extends ServerElement implements IEventListener {
 		this.room = room;
 
 		String serverName = String.format("%s-VocalServer", room.getName());
-		config = Messenger.createEthernetProtocolServerConfig(VoxyProtocolManager.instance(), serverName, new ServerEthernetEndPoint(0));
-		config.setLayerInitializer(() -> new AesSafeLayerInitializer(room.getServer().getCertificate()));
-		config.setConnectionName("VoxyVocalClient");
-		server = Messenger.createUdpProtocolServer(config);
+		IVoxyServerConfig config = room.getServer().getConfig();
+		String address = config.getTcpConfig().getPoint().getAddress();
+		IServerEthernetEndPoint endPoint = new ServerEthernetEndPoint(address, config.getUdpConfig().getMin(), config.getUdpConfig().getMax());
+		configuration = Messenger.createEthernetServerConfig(VoxyProtocolManager.instance(), serverName, endPoint);
+		configuration.setConnectionName("VoxyVocalClient");
+		configuration.setConnectionMaxUnstableCounter(config.getTcpConfig().getConnectionMaxUnstableCounter());
+		configuration.setConnectionHealTime(config.getTcpConfig().getConnectionHealTime());
+		configuration.setLayerInitializer(config.getTcpConfig().getLayerInitializer());
+		configuration.setClientValidator(config.getTcpConfig().getClientValidator());
+		configuration.setServerMaxUnstableCounter(config.getTcpConfig().getServerMaxUnstableCounter());
+		configuration.setServerHealTime(config.getTcpConfig().getServerHealTime());
+		server = Messenger.createUdpServer(configuration);
 
 		clients = new ArrayList<VocalClient>();
 		lock = new Object();
@@ -86,7 +95,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 	 * @return The UDP port number with which this server is bound.
 	 */
 	public int getPort() {
-		return config.getPoint().getPort();
+		return configuration.getPoint().getPort();
 	}
 
 	/**
@@ -137,7 +146,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 		if (event.getRoom() != room.getExternal())
 			return;
 
-		config.setName(event.getRoom().getName());
+		configuration.setName(event.getRoom().getName());
 	}
 
 	@EventHandler
