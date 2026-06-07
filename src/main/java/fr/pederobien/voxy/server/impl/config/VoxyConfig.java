@@ -23,7 +23,7 @@ public class VoxyConfig implements IVoxyConfig {
 		connectionMaxUnstableCounter = 10;
 		connectionHealTime = 1000;
 		layerInitializer = () -> new LayerInitializer();
-		clientValidator = _ -> true;
+		clientValidator = endPoint -> true;
 		serverMaxUnstableCounter = 5;
 		serverHealTime = 1000;
 	}
