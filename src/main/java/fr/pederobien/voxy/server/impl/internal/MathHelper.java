@@ -97,6 +97,7 @@ public class MathHelper {
 	 */
 	private static double getValue(double angle, double[] function) {
 		int index = (int) Math.round(angle / PRECISION);
+		index = Math.max(0, Math.min(function.length, index));
 		return function[index < function.length ? index : function.length - 1];
 	}
 }

@@ -17,6 +17,18 @@ public interface IRoomList {
 	boolean add(String name);
 
 	/**
+	 * Check if there is a room registered for the given name. If a room exists, then returns false. If no room exists for the given
+	 * name, a AddRoomPreEvent is thrown. If the event is cancelled, then returns false. If the AddRoomPreEvent is not cancelled, then
+	 * a room with the given name is created and a AddRoomPostEvent is thrown to notify each client.
+	 * 
+	 * @param name The name of the room to create.
+	 * @param port The port number to use for the associated vocal server.
+	 * 
+	 * @return True if a room has been added, false otherwise.
+	 */
+	boolean add(String name, int port);
+
+	/**
 	 * Check if there is a room registered for the given name. If no room exists, then returns false. If a room exists for the given
 	 * name, a RemoveRoomPreEvent is thrown. If the event is cancelled, then returns false. If the RemoveRoomPreEvent is not
 	 * cancelled, then the room is removed and a RemoveRoomPostEvent is thrown to notify each client.

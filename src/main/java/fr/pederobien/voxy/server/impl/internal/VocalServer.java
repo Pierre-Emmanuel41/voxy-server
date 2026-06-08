@@ -31,8 +31,9 @@ public class VocalServer extends ServerElement implements IEventListener {
 	 * Creates a vocal server.
 	 * 
 	 * @param room The implementation of the room associated to this vocal server.
+	 * @param port The port number to use to open communication.
 	 */
-	protected VocalServer(VoxyRoomImpl room) {
+	protected VocalServer(VoxyRoomImpl room, int port) {
 		super(room.getServer());
 
 		this.room = room;
@@ -40,7 +41,13 @@ public class VocalServer extends ServerElement implements IEventListener {
 		String serverName = String.format("%s-VocalServer", room.getName());
 		IVoxyServerConfig config = room.getServer().getConfig();
 		String address = config.getTcpConfig().getPoint().getAddress();
-		IServerEthernetEndPoint endPoint = new ServerEthernetEndPoint(address, config.getUdpConfig().getMin(), config.getUdpConfig().getMax());
+
+		IServerEthernetEndPoint endPoint;
+		if (port == 0)
+			endPoint = new ServerEthernetEndPoint(address, config.getUdpConfig().getMin(), config.getUdpConfig().getMax());
+		else
+			endPoint = new ServerEthernetEndPoint(address, port);
+
 		configuration = Messenger.createEthernetServerConfig(VoxyProtocolManager.instance(), serverName, endPoint);
 		configuration.setConnectionName("VoxyVocalClient");
 		configuration.setConnectionMaxUnstableCounter(config.getTcpConfig().getConnectionMaxUnstableCounter());

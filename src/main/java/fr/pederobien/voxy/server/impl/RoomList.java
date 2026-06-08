@@ -26,6 +26,11 @@ public class RoomList implements IRoomList {
 
 	@Override
 	public boolean add(String name) {
+		return add(name, 0);
+	}
+
+	@Override
+	public boolean add(String name, int port) {
 
 		// A room is already registered for the given name
 		if (impl.getByName(name) != null)
@@ -34,7 +39,7 @@ public class RoomList implements IRoomList {
 		debug("Adding room %s", name);
 
 		AddRoomPreEvent preEvent = new AddRoomPreEvent(impl.getServer().getExternal(), name);
-		EventManager.callEvent(preEvent, () -> impl.add(name));
+		EventManager.callEvent(preEvent, () -> impl.add(name, port <= 0 ? 0 : port));
 
 		// Event not cancelled, a room has been created and added
 		return !preEvent.isCancelled();

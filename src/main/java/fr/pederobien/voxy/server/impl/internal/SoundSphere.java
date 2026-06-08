@@ -31,9 +31,9 @@ public class SoundSphere implements ISoundSphere {
 		isEnabled = false;
 
 		// Distance in meter.
-		xRadius = 15;
-		yRadius = 15;
-		zRadius = 15;
+		xRadius = 50;
+		yRadius = 50;
+		zRadius = 50;
 
 		// By default, fixed sound volumes
 		leftProfile = new DefaultLeftSoundProfile();

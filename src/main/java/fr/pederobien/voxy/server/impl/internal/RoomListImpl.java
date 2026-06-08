@@ -34,9 +34,20 @@ public class RoomListImpl extends ServerElement {
 	 * Adds the room to this list and throws an AddRoomPostEvent to notify each client.
 	 * 
 	 * @param name The name of the room to create.
+	 * @param port The port number to use for the vocal server.
 	 */
 	public void add(String name) {
-		VoxyRoomImpl roomImpl = new VoxyRoomImpl(getServer(), name);
+		add(name, 0);
+	}
+
+	/**
+	 * Adds the room to this list and throws an AddRoomPostEvent to notify each client.
+	 * 
+	 * @param name The name of the room to create.
+	 * @param port The port number to use for the vocal server.
+	 */
+	public void add(String name, int port) {
+		VoxyRoomImpl roomImpl = new VoxyRoomImpl(getServer(), name, port);
 		synchronized (lock) {
 			rooms.add(roomImpl);
 		}

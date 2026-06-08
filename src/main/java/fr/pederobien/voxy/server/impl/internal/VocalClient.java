@@ -39,8 +39,6 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		client.addRequestHandler(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, this::onPlayerSpeakEvent);
 
 		this.vocalServer = vocalServer;
-
-		EventManager.registerListener(this);
 	}
 
 	@Override
@@ -162,6 +160,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		}
 
 		player = pending;
+		EventManager.registerListener(this);
 
 		debug("Accepting player %s", player.getName());
 		noError(messageID, VoxyIdentifiers.PLAYER_PROPERTIES);
@@ -191,6 +190,11 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 
 		if (!request.getName().equals(player.getName())) {
 			debug("Ignoring player's audio sample, the player name is wrong");
+			return;
+		}
+
+		if (player.isMute()) {
+			debug("Ignoring player's audio sample, the player is mute");
 			return;
 		}
 

@@ -21,13 +21,14 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	 * 
 	 * @param server The server on which this room is created.
 	 * @param name   The room name.
+	 * @param port   The port number to use. If value is 0, then the server will use the UDP config.
 	 */
-	protected VoxyRoomImpl(VoxyServerImpl server, String name) {
+	protected VoxyRoomImpl(VoxyServerImpl server, String name, int port) {
 		super(server);
 
 		this.name = name;
 
-		vocalServer = new VocalServer(this);
+		vocalServer = new VocalServer(this, port);
 		players = new PlayerListImpl(this);
 		soundManager = new SoundManager(players);
 		external = new VoxyRoom(this);
