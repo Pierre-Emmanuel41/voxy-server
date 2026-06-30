@@ -29,7 +29,7 @@ public class RenameRoomPostEvent extends VoxyRoomEvent {
 	@Override
 	public String toString() {
 		StringJoiner joiner = new StringJoiner(",", "{", "}");
-		joiner.add("currentName =" + getRoom().getName());
+		joiner.add("currentName=" + getRoom().getName());
 		joiner.add("oldName=" + getOldName());
 		return String.format("%s_%s", getName(), joiner);
 	}

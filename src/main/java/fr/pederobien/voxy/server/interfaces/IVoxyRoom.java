@@ -15,11 +15,12 @@ public interface IVoxyRoom {
 	/**
 	 * Set the name of this room.
 	 *
-	 * @param name The new room's name.
+	 * @param name   The new room's name.
+	 * @param source The source that requires to rename a room.
 	 * 
 	 * @return True if the room has been renamed, false otherwise.
 	 */
-	boolean setName(String name);
+	boolean setName(String name, ISource source);
 
 	/**
 	 * @return The map of player currently connected in this room. This map is unmodifiable.

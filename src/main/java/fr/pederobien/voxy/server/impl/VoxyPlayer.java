@@ -1,10 +1,9 @@
 package fr.pederobien.voxy.server.impl;
 
-import fr.pederobien.utils.event.EventManager;
-import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
@@ -36,15 +35,29 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
-	public boolean setMute(boolean isMute) {
+	public boolean setMute(boolean isMute, ISource source) {
 		if (isMute() == isMute)
 			return false;
 
-		VoxyPlayerMuteStatusChangePreEvent preEvent = new VoxyPlayerMuteStatusChangePreEvent(this, isMute);
-		EventManager.callEvent(preEvent, () -> impl.setMute(isMute));
+		// Event not cancelled so the mute status has been updated
+		return !impl.raisePlayerMuteStatusChangePreEvent(isMute, source, isCancelled -> {
+			if (!isCancelled)
+				impl.setMute(isMute);
+		});
+	}
 
-		// Event not cancelled, the mute status has been updated
-		return !preEvent.isCancelled();
+	@Override
+	public boolean setMuteBy(boolean isMute, IVoxyPlayer player, ISource source) {
+		VoxyPlayerImpl playerImpl = impl.getServer().getPlayerByName(player.getName());
+		if (playerImpl == null)
+			return false;
+
+		// Event not cancelled so the mute status for the given player has been updated
+		return !impl.raisePlayerMuteByStatusChangePreEvent(player, isMute, source, isCancelled -> {
+			if (!isCancelled) {
+				impl.setMuteBy(playerImpl, isMute);
+			}
+		});
 	}
 
 	@Override

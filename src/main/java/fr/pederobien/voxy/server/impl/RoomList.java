@@ -3,13 +3,11 @@ package fr.pederobien.voxy.server.impl;
 import java.util.List;
 import java.util.Optional;
 
-import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.Logger;
-import fr.pederobien.voxy.server.event.AddRoomPreEvent;
-import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
 import fr.pederobien.voxy.server.impl.internal.RoomListImpl;
 import fr.pederobien.voxy.server.impl.internal.VoxyRoomImpl;
 import fr.pederobien.voxy.server.interfaces.IRoomList;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class RoomList implements IRoomList {
@@ -25,12 +23,7 @@ public class RoomList implements IRoomList {
 	}
 
 	@Override
-	public boolean add(String name) {
-		return add(name, 0);
-	}
-
-	@Override
-	public boolean add(String name, int port) {
+	public boolean add(String name, int port, ISource source) {
 
 		// A room is already registered for the given name
 		if (impl.getByName(name) != null)
@@ -38,15 +31,15 @@ public class RoomList implements IRoomList {
 
 		debug("Adding room %s", name);
 
-		AddRoomPreEvent preEvent = new AddRoomPreEvent(impl.getServer().getExternal(), name);
-		EventManager.callEvent(preEvent, () -> impl.add(name, port <= 0 ? 0 : port));
-
 		// Event not cancelled, a room has been created and added
-		return !preEvent.isCancelled();
+		return !impl.raiseAddRoomPreEvent(name, port, source, isCancelled -> {
+			if (!isCancelled)
+				impl.add(name, port);
+		});
 	}
 
 	@Override
-	public boolean remove(String name) {
+	public boolean remove(String name, ISource source) {
 
 		// The room does not exist
 		VoxyRoomImpl roomImpl = impl.getByName(name);
@@ -55,11 +48,11 @@ public class RoomList implements IRoomList {
 
 		debug("Removing room %s", name);
 
-		RemoveRoomPrevent preEvent = new RemoveRoomPrevent(impl.getServer().getExternal(), roomImpl.getExternal());
-		EventManager.callEvent(preEvent, () -> impl.remove(roomImpl));
-
 		// Event not cancelled, the room has been removed.
-		return !preEvent.isCancelled();
+		return !impl.raiseRemoveRoomPreEvent(roomImpl.getExternal(), source, isCancelled -> {
+			if (!isCancelled)
+				impl.remove(roomImpl);
+		});
 	}
 
 	@Override

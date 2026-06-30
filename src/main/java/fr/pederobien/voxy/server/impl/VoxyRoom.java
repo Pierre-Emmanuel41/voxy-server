@@ -1,10 +1,9 @@
 package fr.pederobien.voxy.server.impl;
 
-import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
-import fr.pederobien.voxy.server.event.RenameRoomPrevent;
 import fr.pederobien.voxy.server.impl.internal.VoxyRoomImpl;
 import fr.pederobien.voxy.server.interfaces.IPlayerList;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
@@ -31,12 +30,12 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 	}
 
 	@Override
-	public boolean setName(String name) {
-		RenameRoomPrevent preEvent = new RenameRoomPrevent(this, name);
-		EventManager.callEvent(preEvent, () -> impl.setName(name));
-
+	public boolean setName(String name, ISource source) {
 		// Event not cancelled to the room has been renamed.
-		return !preEvent.isCancelled();
+		return !impl.raiseRenameRoomPreEvent(name, source, isCancelled -> {
+			if (!isCancelled)
+				impl.setName(name);
+		});
 	}
 
 	@Override

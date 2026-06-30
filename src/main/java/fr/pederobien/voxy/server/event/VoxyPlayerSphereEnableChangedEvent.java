@@ -18,7 +18,7 @@ public class VoxyPlayerSphereEnableChangedEvent extends VoxyPlayerEvent {
 	@Override
 	public String toString() {
 		StringJoiner joiner = new StringJoiner(",", "{", "}");
-		joiner.add("player" + getPlayer().getName());
+		joiner.add("player=" + getPlayer().getName());
 		joiner.add("isEnabled=" + getPlayer().getSoundSphere().isEnabled());
 		return String.format("%s_%s", getName(), joiner);
 	}

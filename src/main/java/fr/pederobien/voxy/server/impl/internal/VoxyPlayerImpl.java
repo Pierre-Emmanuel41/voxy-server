@@ -2,14 +2,18 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VoxyPlayerImpl extends ServerElement {
@@ -60,6 +64,21 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
+	 * Throws a VoxyPlayerMuteStatusChangePreEvent associated to the given input parameters.
+	 * 
+	 * @param isMute   The new player's mute status.
+	 * @param source   The source that requires a player to change its mute status.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
+	 */
+	public boolean raisePlayerMuteStatusChangePreEvent(boolean isMute, ISource source, Consumer<Boolean> callback) {
+		VoxyPlayerMuteStatusChangePreEvent event = new VoxyPlayerMuteStatusChangePreEvent(external, isMute, source);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
+	}
+
+	/**
 	 * Set if this player is mute. A VoxyPlayerMuteStatusChangedEvent is thrown to notify each connected client.
 	 *
 	 * @param isMute True if this player is mute, false otherwise.
@@ -68,6 +87,22 @@ public class VoxyPlayerImpl extends ServerElement {
 		this.isMute = isMute;
 		info("Player %s %s itself", name, isMute ? "muted" : "unmuted");
 		EventManager.callEvent(new VoxyPlayerMuteStatusChangePostEvent(external, isMute));
+	}
+
+	/**
+	 * Throws a VoxyPlayerMuteStatusChangePreEvent associated to the given input parameters.
+	 * 
+	 * @param player   The player that mutes/unmutes another player.
+	 * @param isMute   True to mute, false to unmute.
+	 * @param source   The source that requires a player to be muted for another player.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
+	 */
+	public boolean raisePlayerMuteByStatusChangePreEvent(IVoxyPlayer player, boolean isMute, ISource source, Consumer<Boolean> callback) {
+		VoxyPlayerMuteByChangePreEvent event = new VoxyPlayerMuteByChangePreEvent(player, external, isMute, external);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
 	}
 
 	/**

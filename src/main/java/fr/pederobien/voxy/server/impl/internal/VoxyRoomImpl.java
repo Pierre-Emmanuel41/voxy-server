@@ -1,11 +1,15 @@
 package fr.pederobien.voxy.server.impl.internal;
 
+import java.util.function.Consumer;
+
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
+import fr.pederobien.voxy.server.event.RenameRoomPreEvent;
 import fr.pederobien.voxy.server.impl.VoxyRoom;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class VoxyRoomImpl extends ServerElement implements IEventListener {
@@ -55,6 +59,21 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 		// Opening room's vocal server if and only if the voxy server is opened
 		if (getServer().isOpened())
 			vocalServer.open();
+	}
+
+	/**
+	 * Throws a RenameRoomPreEvent associated to the given input parameters.
+	 * 
+	 * @param newName  The new room's name.
+	 * @param source   The source that requires to rename a room.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
+	 */
+	public boolean raiseRenameRoomPreEvent(String newName, ISource source, Consumer<Boolean> callback) {
+		RenameRoomPreEvent event = new RenameRoomPreEvent(external, newName, source);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
 	}
 
 	/**

@@ -6,9 +6,12 @@ import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.AddRoomPostEvent;
+import fr.pederobien.voxy.server.event.AddRoomPreEvent;
 import fr.pederobien.voxy.server.event.RemoveRoomPostEvent;
+import fr.pederobien.voxy.server.event.RemoveRoomPreEvent;
 import fr.pederobien.voxy.server.impl.RoomList;
 import fr.pederobien.voxy.server.interfaces.IRoomList;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class RoomListImpl extends ServerElement {
@@ -31,13 +34,19 @@ public class RoomListImpl extends ServerElement {
 	}
 
 	/**
-	 * Adds the room to this list and throws an AddRoomPostEvent to notify each client.
+	 * Throws a AddRoomPreEvent associated to the given input parameters.
 	 * 
-	 * @param name The name of the room to create.
-	 * @param port The port number to use for the vocal server.
+	 * @param name     The name of the room to add.
+	 * @param port     The port number to use for the vocal server.
+	 * @param source   The source that requires to add a room on the server.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
 	 */
-	public void add(String name) {
-		add(name, 0);
+	public boolean raiseAddRoomPreEvent(String name, int port, ISource source, Consumer<Boolean> callback) {
+		AddRoomPreEvent event = new AddRoomPreEvent(getServer().getExternal(), name, port, source);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
 	}
 
 	/**
@@ -56,6 +65,21 @@ public class RoomListImpl extends ServerElement {
 
 		roomImpl.initialize();
 		EventManager.callEvent(new AddRoomPostEvent(getServer().getExternal(), roomImpl.getExternal()));
+	}
+
+	/**
+	 * Throws a RemoveRoomPreEvent associated to the given input parameters.
+	 * 
+	 * @param room     The room to remove.
+	 * @param source   The source that requires to remove a room from the server.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
+	 */
+	public boolean raiseRemoveRoomPreEvent(IVoxyRoom room, ISource source, Consumer<Boolean> callback) {
+		RemoveRoomPreEvent event = new RemoveRoomPreEvent(getServer().getExternal(), room, source);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
 	}
 
 	/**

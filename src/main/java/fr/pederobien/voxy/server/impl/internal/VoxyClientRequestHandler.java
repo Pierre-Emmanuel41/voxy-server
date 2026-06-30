@@ -2,7 +2,6 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import fr.pederobien.messenger.interfaces.IProtocolConnection;
 import fr.pederobien.messenger.interfaces.server.IProtocolClient;
-import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.AddRoomRequest;
@@ -13,12 +12,6 @@ import fr.pederobien.voxy.common.impl.requests.PlayerMuteByRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerMuteRequest;
 import fr.pederobien.voxy.common.impl.requests.RemoveRoomRequest;
 import fr.pederobien.voxy.common.impl.requests.RenameRoomRequest;
-import fr.pederobien.voxy.server.event.AddRoomPreEvent;
-import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
-import fr.pederobien.voxy.server.event.RemoveRoomPrevent;
-import fr.pederobien.voxy.server.event.RenameRoomPrevent;
-import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 
 public class VoxyClientRequestHandler extends ClientWrapper {
 	private VoxyPlayerImpl player;
@@ -70,7 +63,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			return;
 		}
 
-		EventManager.callEvent(new AddRoomPreEvent(getServer().getExternal(), request.getName()), isCancelled -> {
+		getServer().getRooms().raiseAddRoomPreEvent(request.getName(), request.getPort(), player.getExternal(), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to add room %s has been cancelled", request.getName());
@@ -78,7 +71,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			} else {
 				debug("Adding room %s to the server", request.getName());
 				noError(messageID, VoxyIdentifiers.ADD_ROOM);
-				getServer().getRooms().add(request.getName());
+				getServer().getRooms().add(request.getName(), request.getPort());
 			}
 		});
 	}
@@ -102,7 +95,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			return;
 		}
 
-		EventManager.callEvent(new RemoveRoomPrevent(getServer().getExternal(), room.getExternal()), isCancelled -> {
+		getServer().getRooms().raiseRemoveRoomPreEvent(room.getExternal(), player.getExternal(), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to remove room %s has been cancelled", request.getName());
@@ -140,7 +133,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			return;
 		}
 
-		EventManager.callEvent(new RenameRoomPrevent(room.getExternal(), request.getNewName()), isCancelled -> {
+		room.raiseRenameRoomPreEvent(request.getNewName(), player.getExternal(), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to remove room %s has been cancelled", request.getNewName());
@@ -198,7 +191,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			}
 		});
 
-		EventManager.callEvent(new JoinRoomPreEvent(room.getExternal(), player.getExternal()), isCancelled -> {
+		room.getPlayers().raiseJoinRoomPreEvent(player.getExternal(), player.getExternal(), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to join room %s has been cancelled", request.getRoomName());
@@ -212,7 +205,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 	}
 
 	/**
-	 * Event handler: Method called when the client requests to join a room on the getServer().
+	 * Event handler: Method called when the client requests to leave a room on the getServer().
 	 * 
 	 * @param connection The connection with the client.
 	 * @param messageID  The client's message identifier.
@@ -266,7 +259,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			return;
 		}
 
-		EventManager.callEvent(new VoxyPlayerMuteStatusChangePreEvent(player.getExternal(), request.isMute()), isCancelled -> {
+		player.raisePlayerMuteStatusChangePreEvent(request.isMute(), player.getExternal(), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				debug("The request to %s player %s has been cancelled", request.isMute() ? "mute" : "unmute", request.getName());
@@ -323,8 +316,7 @@ public class VoxyClientRequestHandler extends ClientWrapper {
 			return;
 		}
 
-		VoxyPlayerMuteByChangePreEvent preEvent = new VoxyPlayerMuteByChangePreEvent(player.getExternal(), target.getExternal(), request.isMute());
-		EventManager.callEvent(preEvent, isCancelled -> {
+		target.raisePlayerMuteByStatusChangePreEvent(player.getExternal(), request.isMute(), player.getExternal(), isCancelled -> {
 			// Notifying the client that the request has been cancelled
 			if (isCancelled) {
 				String format = "The request to %s player %s by player %s has been cancelled";

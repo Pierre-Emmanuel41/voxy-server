@@ -8,9 +8,11 @@ import java.util.function.Predicate;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.voxy.server.event.JoinRoomPendingEvent;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
+import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.impl.PlayerList;
 import fr.pederobien.voxy.server.interfaces.IPlayerList;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class PlayerListImpl extends ServerElement {
@@ -35,6 +37,21 @@ public class PlayerListImpl extends ServerElement {
 		pendings = new ArrayList<VoxyPlayerImpl>();
 		lock = new Object();
 		external = new PlayerList(this);
+	}
+
+	/**
+	 * Throws a JoinRoomPreEvent associated to the given input parameters.
+	 * 
+	 * @param player   The player that is about to join a room.
+	 * @param source   The source that requires a player to join a room.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
+	 */
+	public boolean raiseJoinRoomPreEvent(IVoxyPlayer player, ISource source, Consumer<Boolean> callback) {
+		JoinRoomPreEvent event = new JoinRoomPreEvent(roomImpl.getExternal(), player, source);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
 	}
 
 	/**

@@ -3,11 +3,10 @@ package fr.pederobien.voxy.server.impl;
 import java.util.List;
 import java.util.Optional;
 
-import fr.pederobien.utils.event.EventManager;
-import fr.pederobien.voxy.server.event.JoinRoomPreEvent;
 import fr.pederobien.voxy.server.impl.internal.PlayerListImpl;
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
 import fr.pederobien.voxy.server.interfaces.IPlayerList;
+import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class PlayerList implements IPlayerList {
@@ -23,7 +22,7 @@ public class PlayerList implements IPlayerList {
 	}
 
 	@Override
-	public boolean add(String name) {
+	public boolean add(String name, ISource source) {
 
 		// A player is already registered
 		if (impl.getByName(name) != null)
@@ -35,12 +34,11 @@ public class PlayerList implements IPlayerList {
 		if (player == null)
 			return false;
 
-		// Notifying first that a player is about to join a room, if event not cancelled then the player is added
-		JoinRoomPreEvent preEvent = new JoinRoomPreEvent(impl.getRoomImpl().getExternal(), player.getExternal());
-		EventManager.callEvent(preEvent, () -> impl.addPending(player));
-
 		// Event not cancelled so player added
-		return !preEvent.isCancelled();
+		return !impl.raiseJoinRoomPreEvent(player.getExternal(), source, isCancelled -> {
+			if (!isCancelled)
+				impl.addPending(player);
+		});
 	}
 
 	@Override

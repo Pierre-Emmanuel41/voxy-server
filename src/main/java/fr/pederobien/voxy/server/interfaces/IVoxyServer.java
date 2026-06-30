@@ -3,7 +3,7 @@ package fr.pederobien.voxy.server.interfaces;
 import java.util.List;
 import java.util.Optional;
 
-public interface IVoxyServer {
+public interface IVoxyServer extends ISource {
 
 	/**
 	 * @return The vocal server name.

@@ -10,11 +10,12 @@ public interface IPlayerList {
 	 * registered, a JoinRoomPreEvent is thrown. If the event is cancelled, then returns false. If the JoinRoomPreEvent is not
 	 * cancelled, then the player is added to the list and a JoinRoomPostEvent is thrown to notify each client.
 	 * 
-	 * @param name The name of the player to add to the list.
+	 * @param name   The name of the player to add to the list.
+	 * @param source The source that requires a player to join a room.
 	 * 
 	 * @return True if the player has been added, false otherwise.
 	 */
-	boolean add(String name);
+	boolean add(String name, ISource source);
 
 	/**
 	 * Check if there is a player registered for the given name. If no player is registered, then returns false. If a player is
