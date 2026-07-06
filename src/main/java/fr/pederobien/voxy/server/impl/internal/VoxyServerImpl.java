@@ -13,11 +13,12 @@ import fr.pederobien.messenger.event.ProtocolServerOpenEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.EthernetProtocolServerConfig;
 import fr.pederobien.messenger.interfaces.server.IProtocolServer;
+import fr.pederobien.protocol.interfaces.IProtocolManager;
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
-import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
+import fr.pederobien.voxy.common.impl.VoxyManagers;
 import fr.pederobien.voxy.server.event.VoxyServerCloseEvent;
 import fr.pederobien.voxy.server.event.VoxyServerDisposeEvent;
 import fr.pederobien.voxy.server.event.VoxyServerOpenEvent;
@@ -47,7 +48,8 @@ public class VoxyServerImpl implements IEventListener {
 
 		String name = config.getName();
 		IServerEthernetEndPoint endPoint = config.getTcpConfig().getPoint();
-		EthernetProtocolServerConfig configuration = Messenger.createEthernetServerConfig(VoxyProtocolManager.instance(), name, endPoint);
+		IProtocolManager protocolManager = VoxyManagers.instance().getProtocolManager();
+		EthernetProtocolServerConfig configuration = Messenger.createEthernetServerConfig(protocolManager, name, endPoint);
 		configuration.setConnectionName(name);
 		configuration.setConnectionMaxUnstableCounter(config.getTcpConfig().getConnectionMaxUnstableCounter());
 		configuration.setConnectionHealTime(config.getTcpConfig().getConnectionHealTime());

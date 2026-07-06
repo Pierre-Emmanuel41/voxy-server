@@ -15,7 +15,7 @@ import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
 import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
-import fr.pederobien.voxy.common.impl.VoxyProtocolManager;
+import fr.pederobien.voxy.common.impl.VoxyManagers;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
@@ -48,7 +48,7 @@ public class VocalServer extends ServerElement implements IEventListener {
 		else
 			endPoint = new ServerEthernetEndPoint(address, port);
 
-		configuration = Messenger.createEthernetServerConfig(VoxyProtocolManager.instance(), serverName, endPoint);
+		configuration = Messenger.createEthernetServerConfig(VoxyManagers.instance().getProtocolManager(), serverName, endPoint);
 		configuration.setConnectionName("VoxyVocalClient");
 		configuration.setConnectionMaxUnstableCounter(config.getTcpConfig().getConnectionMaxUnstableCounter());
 		configuration.setConnectionHealTime(config.getTcpConfig().getConnectionHealTime());
