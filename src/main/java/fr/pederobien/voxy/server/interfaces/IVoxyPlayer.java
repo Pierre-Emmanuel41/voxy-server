@@ -38,6 +38,22 @@ public interface IVoxyPlayer extends ISource {
 	boolean setMuteBy(boolean isMute, IVoxyPlayer player, ISource source);
 
 	/**
+	 * Set the effect to apply, on the listener side, on the audio stream of this player.
+	 * 
+	 * @param listener   The player that shall apply an effect on the audio stream of this player.
+	 * @param effectName The name of the effect to apply.
+	 * @param values     The effect parameters value.
+	 */
+	void setEffect(IVoxyPlayer listener, String effectName, Object... values);
+
+	/**
+	 * Removes the effect currently applied on the listener side.
+	 * 
+	 * @param listener The player that shall remove the effect on the audio stream of this player.
+	 */
+	void removeEffect(IVoxyPlayer listener);
+
+	/**
 	 * @return True if the player disabled it speakers, false otherwise.
 	 */
 	boolean isDeaf();

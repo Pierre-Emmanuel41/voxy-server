@@ -17,10 +17,15 @@ import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VoxyPlayerImpl extends ServerElement {
+	/**
+	 * The name of the no effect effect.
+	 */
+	private static final String NO_EFFECT_NAME = "NO EFFECT";
 	private final String name;
 	private final List<VoxyPlayerImpl> muteByPlayers;
 	private final ICoordinates coordinates;
 	private final ISoundSphere soundSphere;
+	private VocalClient vocalClient;
 	private boolean isMute;
 	private boolean isDeaf;
 	private Object lock;
@@ -139,6 +144,32 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
+	 * Set the effect to apply, on the listener side, on the audio stream of this player.
+	 * 
+	 * @param listener   The player that shall apply an effect on the audio stream of this player.
+	 * @param effectName The name of the effect to apply.
+	 * @param values     The effect parameters value.
+	 */
+	public void setEffect(IVoxyPlayer listener, String effectName, Object... values) {
+		if (vocalClient == null)
+			return;
+
+		VoxyPlayerImpl playerImpl = getServer().getPlayerByName(listener.getName());
+		if (playerImpl == null)
+			return;
+
+		playerImpl.getVocalClient().setEffect(name, effectName, values);
+	}
+
+	public void removeEffect(IVoxyPlayer listener) {
+		VoxyPlayerImpl playerImpl = getServer().getPlayerByName(listener.getName());
+		if (playerImpl == null)
+			return;
+
+		playerImpl.getVocalClient().setEffect(name, NO_EFFECT_NAME);
+	}
+
+	/**
 	 * @return True if the player's speakers are enabled, false otherwise.
 	 */
 	public boolean isDeaf() {
@@ -178,6 +209,22 @@ public class VoxyPlayerImpl extends ServerElement {
 	 */
 	public IVoxyPlayer getExternal() {
 		return external;
+	}
+
+	/**
+	 * @return The vocal client associated to this player. Mainly used to send effect notifications.
+	 */
+	private VocalClient getVocalClient() {
+		return vocalClient;
+	}
+
+	/**
+	 * Set the vocal client associated to this player.
+	 * 
+	 * @param vocalClient The client to use to send effect notifications. Can be null when not in a room.
+	 */
+	public void setVocalClient(VocalClient vocalClient) {
+		this.vocalClient = vocalClient;
 	}
 
 	@Override

@@ -145,6 +145,10 @@ public class VoxyClientNotifier extends ClientWrapper implements IEventListener 
 		if (event.getRoom().getServer() != getServer().getExternal())
 			return;
 
+		// Updating player's vocal client
+		if (event.getPlayer() == player.getExternal())
+			player.setVocalClient(null);
+
 		// Notifying the remote a player left a room
 		send(VoxyIdentifiers.LEAVE_ROOM, new LeaveRoomRequest(event.getRoom().getName(), event.getPlayer().getName()));
 	}

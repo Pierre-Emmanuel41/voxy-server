@@ -2,6 +2,7 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 import fr.pederobien.messenger.event.ProtocolConnectionUnstableEvent;
@@ -14,7 +15,11 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
+import fr.pederobien.voxy.common.impl.VoxyManagers;
+import fr.pederobien.voxy.common.impl.effects.EffectDescription;
+import fr.pederobien.voxy.common.impl.effects.EffectManager;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest.VolumeInfo;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
@@ -24,6 +29,7 @@ import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChang
 
 public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
+	private final EffectManager effectManager;
 	private VoxyPlayerImpl player;
 
 	/**
@@ -35,10 +41,11 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	protected VocalClient(VocalServer vocalServer, IProtocolClient client) {
 		super(vocalServer.getServer(), client);
 
+		this.vocalServer = vocalServer;
+		effectManager = VoxyManagers.instance().getEffectManager();
+
 		// Registering event handler
 		client.addRequestHandler(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, this::onPlayerSpeakEvent);
-
-		this.vocalServer = vocalServer;
 	}
 
 	@Override
@@ -79,6 +86,28 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 */
 	public VoxyPlayerImpl getPlayer() {
 		return player;
+	}
+
+	/**
+	 * Sends a request to the remote to apply an effect on the audio stream of a player.
+	 * 
+	 * @param playerName The name of the player on which an effect shall be applied.
+	 * @param effectName The name of the effect to apply.
+	 * @param values     The effect parameters value.
+	 */
+	public void setEffect(String playerName, String effectName, Object... values) {
+		EffectDescription description = effectManager.getEffectDescription(effectName, values);
+		if (description == null) {
+			String format = "Cannot retrieve effect description associated to effect name \"%s\" and values %s";
+			StringJoiner joiner = new StringJoiner(",", "{", "}");
+			for (Object obj : values)
+				joiner.add(obj.toString());
+
+			warning(format, effectName, joiner);
+			return;
+		}
+
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_EFFECT, new PlayerAudioStreamEffectRequest(playerName, description));
 	}
 
 	@EventHandler
@@ -160,6 +189,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		}
 
 		player = pending;
+		player.setVocalClient(this);
 		EventManager.registerListener(this);
 
 		debug("Accepting player %s", player.getName());
@@ -174,7 +204,17 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 * @param args    The arguments of the message.
 	 */
 	protected void debug(String format, Object... args) {
-		Logger.debug("%s - %s", this, String.format(format, args));
+		Logger.debug(3, "%s - %s", this, String.format(format, args));
+	}
+
+	/**
+	 * Print a log using DEBUG level
+	 *
+	 * @param message The message to print.
+	 * @param args    The arguments of the message.
+	 */
+	protected void warning(String format, Object... args) {
+		Logger.warning("%s - %s", this, String.format(format, args));
 	}
 
 	/**

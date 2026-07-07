@@ -61,6 +61,16 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
+	public void setEffect(IVoxyPlayer listener, String effectName, Object... values) {
+		impl.setEffect(listener, effectName, values);
+	}
+
+	@Override
+	public void removeEffect(IVoxyPlayer listener) {
+		impl.removeEffect(listener);
+	}
+
+	@Override
 	public boolean isDeaf() {
 		return impl.isDeaf();
 	}
