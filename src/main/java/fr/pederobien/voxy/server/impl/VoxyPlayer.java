@@ -61,13 +61,13 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
-	public void setEffect(IVoxyPlayer listener, String effectName, Object... values) {
-		impl.setEffect(listener, effectName, values);
+	public void setEffect(IVoxyPlayer speaker, String effectName, Object... values) {
+		impl.setEffect(speaker, effectName, values);
 	}
 
 	@Override
-	public void removeEffect(IVoxyPlayer listener) {
-		impl.removeEffect(listener);
+	public void removeEffect(IVoxyPlayer speaker) {
+		impl.removeEffect(speaker);
 	}
 
 	@Override

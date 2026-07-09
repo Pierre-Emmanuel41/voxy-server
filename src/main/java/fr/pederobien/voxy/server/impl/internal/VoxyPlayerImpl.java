@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
+import fr.pederobien.voxy.common.impl.effects.NoEffectDescription;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
@@ -17,10 +18,6 @@ import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VoxyPlayerImpl extends ServerElement {
-	/**
-	 * The name of the no effect effect.
-	 */
-	private static final String NO_EFFECT_NAME = "NO EFFECT";
 	private final String name;
 	private final List<VoxyPlayerImpl> muteByPlayers;
 	private final ICoordinates coordinates;
@@ -150,23 +147,23 @@ public class VoxyPlayerImpl extends ServerElement {
 	 * @param effectName The name of the effect to apply.
 	 * @param values     The effect parameters value.
 	 */
-	public void setEffect(IVoxyPlayer listener, String effectName, Object... values) {
+	public void setEffect(IVoxyPlayer speaker, String effectName, Object... values) {
 		if (vocalClient == null)
 			return;
 
-		VoxyPlayerImpl playerImpl = getServer().getPlayerByName(listener.getName());
-		if (playerImpl == null)
-			return;
-
-		playerImpl.getVocalClient().setEffect(name, effectName, values);
+		vocalClient.setEffect(speaker.getName(), effectName, values);
 	}
 
-	public void removeEffect(IVoxyPlayer listener) {
-		VoxyPlayerImpl playerImpl = getServer().getPlayerByName(listener.getName());
-		if (playerImpl == null)
+	/**
+	 * Removes the effect currently applied on the audio stream of the speaking player.
+	 * 
+	 * @param speaker The player that is speaking.
+	 */
+	public void removeEffect(IVoxyPlayer speaker) {
+		if (vocalClient == null)
 			return;
 
-		playerImpl.getVocalClient().setEffect(name, NO_EFFECT_NAME);
+		vocalClient.setEffect(speaker.getName(), NoEffectDescription.NAME);
 	}
 
 	/**
@@ -209,13 +206,6 @@ public class VoxyPlayerImpl extends ServerElement {
 	 */
 	public IVoxyPlayer getExternal() {
 		return external;
-	}
-
-	/**
-	 * @return The vocal client associated to this player. Mainly used to send effect notifications.
-	 */
-	private VocalClient getVocalClient() {
-		return vocalClient;
 	}
 
 	/**
