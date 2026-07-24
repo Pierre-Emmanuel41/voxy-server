@@ -12,8 +12,6 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerCoordinateChangedEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
@@ -58,9 +56,10 @@ public class SoundManager implements IEventListener {
 	 * @param algorithm The algorithm used to compress the audio sample.
 	 */
 	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, byte algorithm) {
-		List<IVoxyPlayer> filtered = players.filter(player -> filter(source, player));
-		VoxyPlayerSpeakingPreEvent preEvent = new VoxyPlayerSpeakingPreEvent(source.getExternal(), filtered, sample, algorithm);
-		EventManager.callEvent(preEvent, new VoxyPlayerSpeakingPostEvent(preEvent));
+		List<VoxyPlayerImpl> listeners = players.filter(player -> filter(source, player));
+
+		for (VoxyPlayerImpl listener : listeners)
+			listener.getVocalClient().onPlayerSpeaking(source.getName(), sample, algorithm);
 	}
 
 	@EventHandler

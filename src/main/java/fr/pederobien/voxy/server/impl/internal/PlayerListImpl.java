@@ -195,16 +195,16 @@ public class PlayerListImpl extends ServerElement {
 	 * @param filter The filter to apply to each player.
 	 * @return The filtered list.
 	 */
-	public List<IVoxyPlayer> filter(Predicate<VoxyPlayerImpl> filter) {
+	public List<VoxyPlayerImpl> filter(Predicate<VoxyPlayerImpl> filter) {
 		List<VoxyPlayerImpl> copy;
 		synchronized (lock) {
 			copy = new ArrayList<VoxyPlayerImpl>(players);
 		}
 
-		List<IVoxyPlayer> filtered = new ArrayList<IVoxyPlayer>();
+		List<VoxyPlayerImpl> filtered = new ArrayList<VoxyPlayerImpl>();
 		for (VoxyPlayerImpl player : copy)
 			if (filter.test(player))
-				filtered.add(player.getExternal());
+				filtered.add(player);
 
 		return filtered;
 	}

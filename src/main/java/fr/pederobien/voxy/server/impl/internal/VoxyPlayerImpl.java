@@ -209,6 +209,13 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
+	 * @return The vocal client associated to this player.
+	 */
+	public VocalClient getVocalClient() {
+		return vocalClient;
+	}
+
+	/**
 	 * Set the vocal client associated to this player.
 	 * 
 	 * @param vocalClient The client to use to send effect notifications. Can be null when not in a room.

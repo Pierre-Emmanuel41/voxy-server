@@ -23,7 +23,6 @@ import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest.VolumeInfo;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
-import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
 
@@ -110,12 +109,15 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_EFFECT, new PlayerAudioStreamEffectRequest(playerName, description));
 	}
 
-	@EventHandler
-	private void onPlayerSpeaking(VoxyPlayerSpeakingPostEvent event) {
-		if (!event.getReceivers().contains(player.getExternal()))
-			return;
-
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(event.getPlayer().getName(), event.getSample(), event.getAlgorithm()));
+	/**
+	 * Sends a request to the remote to add the given sample to the audio stream of the given player.
+	 * 
+	 * @param name      The name of the speaking player.
+	 * @param sample    The bytes array that contains the player's audio stream.
+	 * @param algorithm The algorithm used to compress the audio stream.
+	 */
+	public void onPlayerSpeaking(String name, byte[] sample, byte algorithm) {
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(name, sample, algorithm));
 	}
 
 	@EventHandler
