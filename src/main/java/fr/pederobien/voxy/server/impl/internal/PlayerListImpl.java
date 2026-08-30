@@ -16,7 +16,7 @@ import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class PlayerListImpl extends ServerElement {
-	private final VoxyRoomImpl roomImpl;
+	private final VoxyRoomImpl room;
 	private final List<VoxyPlayerImpl> players;
 	private final List<VoxyPlayerImpl> pendings;
 	private final Object lock;
@@ -26,12 +26,12 @@ public class PlayerListImpl extends ServerElement {
 	/**
 	 * Creates the implementation of a list of players associated to a room.
 	 * 
-	 * @param roomImpl The voxy room implementation associated to this players list implementation.
+	 * @param room The voxy room implementation associated to this players list implementation.
 	 */
-	protected PlayerListImpl(VoxyRoomImpl roomImpl) {
-		super(roomImpl.getServer());
+	protected PlayerListImpl(VoxyRoomImpl room) {
+		super(room.getServer());
 
-		this.roomImpl = roomImpl;
+		this.room = room;
 
 		players = new ArrayList<VoxyPlayerImpl>();
 		pendings = new ArrayList<VoxyPlayerImpl>();
@@ -48,7 +48,7 @@ public class PlayerListImpl extends ServerElement {
 	 * @return True if the event has been cancelled, false otherwise.
 	 */
 	public boolean raiseJoinRoomPreEvent(IVoxyPlayer player, ISource source, Consumer<Boolean> callback) {
-		JoinRoomPreEvent event = new JoinRoomPreEvent(roomImpl.getExternal(), player, source);
+		JoinRoomPreEvent event = new JoinRoomPreEvent(room.getExternal(), player, source);
 		EventManager.callEvent(event);
 		callback.accept(event.isCancelled());
 		return event.isCancelled();
@@ -62,7 +62,7 @@ public class PlayerListImpl extends ServerElement {
 	public void addPending(VoxyPlayerImpl player) {
 		synchronized (lock) {
 			pendings.add(player);
-			EventManager.callEvent(new JoinRoomPendingEvent(roomImpl.getExternal(), player.getExternal()));
+			EventManager.callEvent(new JoinRoomPendingEvent(room.getExternal(), player.getExternal()));
 		}
 	}
 
@@ -98,15 +98,16 @@ public class PlayerListImpl extends ServerElement {
 	/**
 	 * Adds the player to the list and throws a JoinRoomPostEvent to notify each client.
 	 * 
-	 * @param playerImpl The player implementation to add to the list.
+	 * @param player The player implementation to add to the list.
 	 */
-	public void add(VoxyPlayerImpl playerImpl) {
+	public void add(VoxyPlayerImpl player) {
 		synchronized (lock) {
-			players.add(playerImpl);
+			players.add(player);
 		}
 
-		info("Player %s joined the room %s", playerImpl, roomImpl);
-		EventManager.callEvent(new JoinRoomPostEvent(roomImpl.getExternal(), playerImpl.getExternal()));
+		info("Player %s joined the room %s", player, room);
+		player.setRoom(room);
+		EventManager.callEvent(new JoinRoomPostEvent(room.getExternal(), player.getExternal()));
 	}
 
 	/**
@@ -114,17 +115,18 @@ public class PlayerListImpl extends ServerElement {
 	 * 
 	 * @param name The name of the player to remove.
 	 */
-	public void remove(VoxyPlayerImpl playerImpl) {
+	public void remove(VoxyPlayerImpl player) {
 		boolean removed;
 		synchronized (lock) {
-			removed = players.remove(playerImpl);
+			removed = players.remove(player);
 		}
 
 		if (!removed)
 			return;
 
-		info("Player %s left the room %s", playerImpl, roomImpl);
-		EventManager.callEvent(new LeaveRoomPostEvent(roomImpl.getExternal(), playerImpl.getExternal()));
+		info("Player %s left the room %s", player, room);
+		player.setRoom(null);
+		EventManager.callEvent(new LeaveRoomPostEvent(room.getExternal(), player.getExternal()));
 	}
 
 	/**
@@ -138,7 +140,7 @@ public class PlayerListImpl extends ServerElement {
 		}
 
 		for (VoxyPlayerImpl playerImpl : copy)
-			EventManager.callEvent(new LeaveRoomPostEvent(roomImpl.getExternal(), playerImpl.getExternal()));
+			EventManager.callEvent(new LeaveRoomPostEvent(room.getExternal(), playerImpl.getExternal()));
 	}
 
 	/**
@@ -213,7 +215,7 @@ public class PlayerListImpl extends ServerElement {
 	 * @return The implementation of the room associated to this players list.
 	 */
 	public VoxyRoomImpl getRoomImpl() {
-		return roomImpl;
+		return room;
 	}
 
 	/**

@@ -13,6 +13,11 @@ public interface IVoxyPlayer extends ISource {
 	String getName();
 
 	/**
+	 * @return Get the voxy room in which the player is. Null if the player is not registered in a room.
+	 */
+	IVoxyRoom getRoom();
+
+	/**
 	 * @return True if the player is muted, false otherwise.
 	 */
 	boolean isMute();
@@ -42,16 +47,26 @@ public interface IVoxyPlayer extends ISource {
 	 * 
 	 * @param speaker    The player that is speaking.
 	 * @param effectName The name of the effect to apply on the audio stream of the speaking player.
-	 * @param values     The effect parameters value.
+	 * @param holder     A holder that contains the effect name and gather effect parameter's name / parameter's value.
 	 */
-	void setEffect(IVoxyPlayer speaker, String effectName, Object... values);
+	void addEffect(IVoxyPlayer speaker, int index, IEffect holder);
 
 	/**
-	 * Removes the effect currently applied on the audio stream of the speaking player.
+	 * Stops the effect associated to the given effectName. The effect will transition smoothly from applied to not applied. Once
+	 * stopped completely, the effect will be removed.
 	 * 
-	 * @param speaker The player that is speaking.
+	 * @param name       The name of the audio stream for which an effect shall be removed.
+	 * @param effectName The name of the effect to remove.
 	 */
-	void removeEffect(IVoxyPlayer speaker);
+	void removeEffect(IVoxyPlayer speaker, String effectName);
+
+	/**
+	 * Update the parameters of an effect. The parameters defines how the effect modifies the audio stream.
+	 * 
+	 * @param name   The name of the audio stream on which an effect shall be modified.
+	 * @param holder A holder that contains the effect name and gather effect parameter's name / parameter's value.
+	 */
+	void updateEffect(IVoxyPlayer speaker, IEffect holder);
 
 	/**
 	 * @return True if the player disabled it speakers, false otherwise.

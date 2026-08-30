@@ -37,6 +37,11 @@ public interface IVoxyServer extends ISource {
 	boolean isOpened();
 
 	/**
+	 * @return The port number this server is using. -1 if the server is not yet opened or has been closed.
+	 */
+	int getPort();
+
+	/**
 	 * @return True if this server is disposed, false otherwise.
 	 */
 	boolean isDisposed();

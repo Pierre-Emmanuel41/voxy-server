@@ -2,9 +2,11 @@ package fr.pederobien.voxy.server.impl;
 
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
+import fr.pederobien.voxy.server.interfaces.IEffect;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
+import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 
 public class VoxyPlayer implements IVoxyPlayer {
@@ -27,6 +29,11 @@ public class VoxyPlayer implements IVoxyPlayer {
 	@Override
 	public String getName() {
 		return impl.getName();
+	}
+
+	@Override
+	public IVoxyRoom getRoom() {
+		return impl.getRoom().getExternal();
 	}
 
 	@Override
@@ -61,13 +68,18 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
-	public void setEffect(IVoxyPlayer speaker, String effectName, Object... values) {
-		impl.setEffect(speaker, effectName, values);
+	public void addEffect(IVoxyPlayer speaker, int index, IEffect holder) {
+		impl.addEffect(speaker, index, holder);
 	}
 
 	@Override
-	public void removeEffect(IVoxyPlayer speaker) {
-		impl.removeEffect(speaker);
+	public void removeEffect(IVoxyPlayer speaker, String effectName) {
+		impl.removeEffect(speaker, effectName);
+	}
+
+	@Override
+	public void updateEffect(IVoxyPlayer speaker, IEffect holder) {
+		impl.updateEffect(speaker, holder);
 	}
 
 	@Override

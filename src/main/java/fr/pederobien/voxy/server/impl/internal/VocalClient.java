@@ -2,7 +2,6 @@ package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 import fr.pederobien.messenger.event.ProtocolConnectionUnstableEvent;
@@ -16,15 +15,18 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.VoxyManagers;
-import fr.pederobien.voxy.common.impl.effects.EffectDescription;
+import fr.pederobien.voxy.common.impl.effects.Effect;
 import fr.pederobien.voxy.common.impl.effects.EffectManager;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamAddEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
-import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamEffectRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamRemoveEffectRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamUpdateEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest.VolumeInfo;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
+import fr.pederobien.voxy.server.interfaces.IEffect;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
@@ -88,25 +90,49 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	}
 
 	/**
-	 * Sends a request to the remote to apply an effect on the audio stream of a player.
+	 * Sends a request to the remote to add an effect on an audio stream.
 	 * 
-	 * @param playerName The name of the player on which an effect shall be applied.
-	 * @param effectName The name of the effect to apply.
-	 * @param values     The effect parameters value.
+	 * @param playerName The name of the speaking player, ie the name of the audio stream.
+	 * @param index      The index at which the effect shall be added. If the index is greater than the size of the list of effect
+	 * @param holder     A holder that contains the effect name and gather effect parameter's name / parameter's value.
+	 * 
 	 */
-	public void setEffect(String playerName, String effectName, Object... values) {
-		EffectDescription description = effectManager.getEffectDescription(effectName, values);
-		if (description == null) {
-			String format = "Cannot retrieve effect description associated to effect name \"%s\" and values %s";
-			StringJoiner joiner = new StringJoiner(",", "{", "}");
-			for (Object obj : values)
-				joiner.add(obj.toString());
-
-			warning(format, effectName, joiner);
+	public void addEffect(String playerName, int index, IEffect holder) {
+		Effect effect = effectManager.getEffect(holder.getEffectName(), holder.getParametersMap());
+		if (effect == null) {
+			String format = "Cannot retrieve effect associated to %s";
+			warning(format, holder);
 			return;
 		}
 
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_EFFECT, new PlayerAudioStreamEffectRequest(playerName, description));
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_ADD_EFFECT, new PlayerAudioStreamAddEffectRequest(playerName, (byte) index, effect));
+	}
+
+	/**
+	 * Sends a request to remove an effect from an audio stream.
+	 * 
+	 * @param playerName The name of the speaking player, ie the name of the audio stream.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffect(String playerName, String effectName) {
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_REMOVE_EFFECT, new PlayerAudioStreamRemoveEffectRequest(playerName, effectName));
+	}
+
+	/**
+	 * Sends a request to update the parameters of an effect.
+	 * 
+	 * @param name   The name of the audio stream for which an effect shall be removed.
+	 * @param holder A holder that contains the effect name and gather effect parameter's name / parameter's value.
+	 */
+	public void updateEffect(String playerName, IEffect holder) {
+		Effect effect = effectManager.getEffect(holder.getEffectName(), holder.getParametersMap());
+		if (effect == null) {
+			String format = "Cannot retrieve effect associated to %s";
+			warning(format, holder);
+			return;
+		}
+
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_UPDATE_EFFECT, new PlayerAudioStreamUpdateEffectRequest(playerName, effect));
 	}
 
 	/**

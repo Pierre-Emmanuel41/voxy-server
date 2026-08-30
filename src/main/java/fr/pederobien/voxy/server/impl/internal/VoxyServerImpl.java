@@ -12,7 +12,7 @@ import fr.pederobien.messenger.event.ProtocolServerDisposeEvent;
 import fr.pederobien.messenger.event.ProtocolServerOpenEvent;
 import fr.pederobien.messenger.impl.Messenger;
 import fr.pederobien.messenger.impl.server.EthernetProtocolServerConfig;
-import fr.pederobien.messenger.interfaces.server.IProtocolServer;
+import fr.pederobien.messenger.interfaces.server.IEthernetProtocolServer;
 import fr.pederobien.protocol.interfaces.IProtocolManager;
 import fr.pederobien.utils.event.EventHandler;
 import fr.pederobien.utils.event.EventManager;
@@ -29,7 +29,7 @@ import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
 
 public class VoxyServerImpl implements IEventListener {
 	private final IVoxyServerConfig config;
-	private final IProtocolServer server;
+	private final IEthernetProtocolServer server;
 	private final RoomListImpl roomsImpl;
 	private final List<VoxyClient> clients;
 	private final Object lock;
@@ -141,6 +141,13 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public boolean isOpened() {
 		return server.isOpened();
+	}
+
+	/**
+	 * @return The port number this server is using. -1 if the server is not yet opened or has been closed.
+	 */
+	public int getPort() {
+		return server.getPort();
 	}
 
 	/**

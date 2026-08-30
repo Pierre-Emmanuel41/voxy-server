@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
-import fr.pederobien.voxy.common.impl.effects.NoEffectDescription;
 import fr.pederobien.voxy.server.event.VoxyPlayerDeafStatusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
@@ -13,6 +12,7 @@ import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
+import fr.pederobien.voxy.server.interfaces.IEffect;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.ISource;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
@@ -23,6 +23,7 @@ public class VoxyPlayerImpl extends ServerElement {
 	private final ICoordinates coordinates;
 	private final ISoundSphere soundSphere;
 	private VocalClient vocalClient;
+	private VoxyRoomImpl room;
 	private boolean isMute;
 	private boolean isDeaf;
 	private Object lock;
@@ -56,6 +57,22 @@ public class VoxyPlayerImpl extends ServerElement {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * @return Get the voxy room in which the player is. Null if the player is not registered in a room.
+	 */
+	public VoxyRoomImpl getRoom() {
+		return room;
+	}
+
+	/**
+	 * Set the room in which this player is registered. Null indicates that the player is not registered in a room.
+	 * 
+	 * @param room The room in which this player is.
+	 */
+	public void setRoom(VoxyRoomImpl room) {
+		this.room = room;
 	}
 
 	/**
@@ -141,29 +158,44 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
-	 * Set the effect to apply, on the listener side, on the audio stream of this player.
+	 * Set the effect to apply on the audio stream of the speaking player.
 	 * 
-	 * @param listener   The player that shall apply an effect on the audio stream of this player.
-	 * @param effectName The name of the effect to apply.
-	 * @param values     The effect parameters value.
+	 * @param speaker The player that is speaking.
+	 * @param index   The index at which the effect shall be added. If the index is greater than the size of the list of effect
+	 * @param holder  A holder that contains the effect name and gather effect parameter's name / parameter's value.
 	 */
-	public void setEffect(IVoxyPlayer speaker, String effectName, Object... values) {
+	public void addEffect(IVoxyPlayer speaker, int index, IEffect holder) {
 		if (vocalClient == null)
 			return;
 
-		vocalClient.setEffect(speaker.getName(), effectName, values);
+		vocalClient.addEffect(speaker.getName(), index, holder);
 	}
 
 	/**
-	 * Removes the effect currently applied on the audio stream of the speaking player.
+	 * Stops the effect associated to the given effectName. The effect will transition smoothly from applied to not applied. Once
+	 * stopped completely, the effect will be removed.
 	 * 
-	 * @param speaker The player that is speaking.
+	 * @param name       The name of the audio stream for which an effect shall be removed.
+	 * @param effectName The name of the effect to remove.
 	 */
-	public void removeEffect(IVoxyPlayer speaker) {
+	public void removeEffect(IVoxyPlayer speaker, String effectName) {
 		if (vocalClient == null)
 			return;
 
-		vocalClient.setEffect(speaker.getName(), NoEffectDescription.NAME);
+		vocalClient.removeEffect(speaker.getName(), effectName);
+	}
+
+	/**
+	 * Update the parameters of an effect. The parameters defines how the effect modifies the audio stream.
+	 * 
+	 * @param name   The name of the audio stream on which an effect shall be modified.
+	 * @param holder A holder that contains the effect name and gather effect parameter's name / parameter's value.
+	 */
+	public void updateEffect(IVoxyPlayer speaker, IEffect holder) {
+		if (vocalClient == null)
+			return;
+
+		vocalClient.updateEffect(speaker.getName(), holder);
 	}
 
 	/**

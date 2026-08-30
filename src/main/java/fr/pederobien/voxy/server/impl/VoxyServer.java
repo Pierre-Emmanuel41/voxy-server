@@ -48,6 +48,11 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 	}
 
 	@Override
+	public int getPort() {
+		return impl.getPort();
+	}
+
+	@Override
 	public boolean isDisposed() {
 		return impl.isDisposed();
 	}
