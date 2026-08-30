@@ -10,6 +10,8 @@ import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePostEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePreEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
 import fr.pederobien.voxy.server.interfaces.IEffect;
@@ -26,6 +28,7 @@ public class VoxyPlayerImpl extends ServerElement {
 	private VoxyRoomImpl room;
 	private boolean isMute;
 	private boolean isDeaf;
+	private boolean playback;
 	private Object lock;
 
 	private final IVoxyPlayer external;
@@ -50,6 +53,8 @@ public class VoxyPlayerImpl extends ServerElement {
 		coordinates = new Coordinates(this);
 		soundSphere = new SoundSphere(this);
 		external = new VoxyPlayer(this);
+
+		playback = false;
 	}
 
 	/**
@@ -155,6 +160,44 @@ public class VoxyPlayerImpl extends ServerElement {
 		synchronized (lock) {
 			return muteByPlayers.contains(other);
 		}
+	}
+
+	/**
+	 * Throws a VoxyPlayerPlaybackChangePreEvent associated to the given input parameters.
+	 * 
+	 * @param playback The player that mutes/unmutes another player.
+	 * @param isMute   True to mute, false to unmute.
+	 * @param source   The source that requires a player to be muted for another player.
+	 * @param callback The action to execute with event cancellation status as input parameter.
+	 * @return True if the event has been cancelled, false otherwise.
+	 */
+	public boolean raisePlayerPlaybackChangePreEvent(boolean playback, ISource source, Consumer<Boolean> callback) {
+		VoxyPlayerPlaybackChangePreEvent event = new VoxyPlayerPlaybackChangePreEvent(external, playback, source);
+		EventManager.callEvent(event);
+		callback.accept(event.isCancelled());
+		return event.isCancelled();
+	}
+
+	/**
+	 * Set if this player shall hear its own audio stream.
+	 * 
+	 * @param playback True if this player shall hear its own audio stream, false otherwise.
+	 */
+	public void setPlayback(boolean playback) {
+		if (this.playback == playback)
+			return;
+
+		this.playback = playback;
+
+		debug("Playback %s for %s", playback ? "enabled" : "disabled", external.getName());
+		EventManager.callEvent(new VoxyPlayerPlaybackChangePostEvent(external, playback));
+	}
+
+	/**
+	 * @return True if this player shall hear its own audio stream, false otherwise.
+	 */
+	public boolean isPlayback() {
+		return playback;
 	}
 
 	/**

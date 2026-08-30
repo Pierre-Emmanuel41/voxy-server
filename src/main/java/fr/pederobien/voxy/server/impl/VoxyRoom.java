@@ -44,11 +44,6 @@ public class VoxyRoom implements IVoxyRoom, IEventListener {
 	}
 
 	@Override
-	public void setPlayBack(boolean playBack) {
-		impl.setPlayBack(playBack);
-	}
-
-	@Override
 	public String toString() {
 		return impl.toString();
 	}

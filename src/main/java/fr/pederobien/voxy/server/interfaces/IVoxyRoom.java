@@ -26,11 +26,4 @@ public interface IVoxyRoom {
 	 * @return The map of player currently connected in this room. This map is unmodifiable.
 	 */
 	IPlayerList getPlayers();
-
-	/**
-	 * Enable or disable the play back. When player back is enabled, a player will here back the audio samples sent to the server.
-	 * 
-	 * @param playBack True to enable play back, false to disable.
-	 */
-	void setPlayBack(boolean playBack);
 }

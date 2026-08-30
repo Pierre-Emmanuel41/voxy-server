@@ -107,15 +107,6 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	}
 
 	/**
-	 * Enable or disable the play back. When player back is enabled, a player will here back the audio samples sent to the server.
-	 * 
-	 * @param playBack True to enable play back, false to disable.
-	 */
-	public void setPlayBack(boolean playBack) {
-		soundManager.setPlayBack(playBack);
-	}
-
-	/**
 	 * @return The room to be used externally.
 	 */
 	public IVoxyRoom getExternal() {

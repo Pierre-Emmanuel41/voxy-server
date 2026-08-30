@@ -68,6 +68,19 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
+	public boolean setPlayback(boolean playback, ISource source) {
+		return !impl.raisePlayerPlaybackChangePreEvent(playback, source, isCancelled -> {
+			if (!isCancelled)
+				impl.setPlayback(playback);
+		});
+	}
+
+	@Override
+	public boolean isPlayback() {
+		return impl.isPlayback();
+	}
+
+	@Override
 	public void addEffect(IVoxyPlayer speaker, int index, IEffect holder) {
 		impl.addEffect(speaker, index, holder);
 	}

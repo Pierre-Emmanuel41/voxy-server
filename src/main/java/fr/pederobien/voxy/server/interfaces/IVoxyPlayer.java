@@ -43,6 +43,20 @@ public interface IVoxyPlayer extends ISource {
 	boolean setMuteBy(boolean isMute, IVoxyPlayer player, ISource source);
 
 	/**
+	 * Set if this player shall hear it's own audio stream.
+	 * 
+	 * @param playback True if this player shall hear it's own audio stream, false otherwise.
+	 * @param source   The source that requires this player to change its playback status.
+	 * @return True if the playback status has been updated, false otherwise.
+	 */
+	boolean setPlayback(boolean playback, ISource source);
+
+	/**
+	 * @return True if this player shall hear it's own audio stream, false otherwise.
+	 */
+	boolean isPlayback();
+
+	/**
 	 * Set the effect to apply on the audio stream of the speaking player.
 	 * 
 	 * @param speaker    The player that is speaking.

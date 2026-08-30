@@ -22,7 +22,6 @@ import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 public class SoundManager implements IEventListener {
 	private final PlayerListImpl players;
 	private final HearTable hearTable;
-	private boolean playback;
 
 	/**
 	 * Creates a sound manager responsible to dispatch player's audio sample.
@@ -33,19 +32,8 @@ public class SoundManager implements IEventListener {
 		this.players = players;
 
 		hearTable = new HearTable();
-		playback = false;
 
 		EventManager.registerListener(this);
-	}
-
-	/**
-	 * Enable or disable the play back. When player back is enabled, a player will here back the audio samples sent to the server.
-	 * 
-	 * @param playback True to enable play back, false to disable.
-	 */
-	public void setPlayBack(boolean playback) {
-		debug("Playback %s on room %s", playback ? "enabled" : "disabled", players.getRoomImpl().getName());
-		this.playback = playback;
 	}
 
 	/**
@@ -133,7 +121,7 @@ public class SoundManager implements IEventListener {
 			return false;
 
 		if (listener.equals(speaker))
-			return playback;
+			return speaker.isPlayback();
 
 		if (speaker.isMuteBy(listener))
 			return false;
