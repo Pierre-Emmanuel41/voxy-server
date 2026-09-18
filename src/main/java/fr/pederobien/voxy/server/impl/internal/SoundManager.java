@@ -16,6 +16,7 @@ import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
+import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingEvent;
 import fr.pederobien.voxy.server.interfaces.ISoundVolumes;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
@@ -48,6 +49,9 @@ public class SoundManager implements IEventListener {
 
 		for (VoxyPlayerImpl listener : listeners)
 			listener.getVocalClient().onPlayerSpeaking(source.getName(), sample, algorithm);
+
+		// Notifying that a player is speaking
+		EventManager.callEvent(new VoxyPlayerSpeakingEvent(source.getExternal()));
 	}
 
 	@EventHandler
