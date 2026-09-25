@@ -14,9 +14,9 @@ import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePreEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
-import fr.pederobien.voxy.server.interfaces.IEffect;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.ISource;
+import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VoxyPlayerImpl extends ServerElement {
@@ -201,47 +201,6 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
-	 * Set the effect to apply on the audio stream of the speaking player.
-	 * 
-	 * @param speaker The player that is speaking.
-	 * @param index   The index at which the effect shall be added. If the index is greater than the size of the list of effect
-	 * @param holder  A holder that contains the effect name and gather effect parameter's name / parameter's value.
-	 */
-	public void addEffect(IVoxyPlayer speaker, int index, IEffect holder) {
-		if (vocalClient == null)
-			return;
-
-		vocalClient.addEffect(speaker.getName(), index, holder);
-	}
-
-	/**
-	 * Stops the effect associated to the given effectName. The effect will transition smoothly from applied to not applied. Once
-	 * stopped completely, the effect will be removed.
-	 * 
-	 * @param name       The name of the audio stream for which an effect shall be removed.
-	 * @param effectName The name of the effect to remove.
-	 */
-	public void removeEffect(IVoxyPlayer speaker, String effectName) {
-		if (vocalClient == null)
-			return;
-
-		vocalClient.removeEffect(speaker.getName(), effectName);
-	}
-
-	/**
-	 * Update the parameters of an effect. The parameters defines how the effect modifies the audio stream.
-	 * 
-	 * @param name   The name of the audio stream on which an effect shall be modified.
-	 * @param holder A holder that contains the effect name and gather effect parameter's name / parameter's value.
-	 */
-	public void updateEffect(IVoxyPlayer speaker, IEffect holder) {
-		if (vocalClient == null)
-			return;
-
-		vocalClient.updateEffect(speaker.getName(), holder);
-	}
-
-	/**
 	 * @return True if the player's speakers are enabled, false otherwise.
 	 */
 	public boolean isDeaf() {
@@ -274,6 +233,47 @@ public class VoxyPlayerImpl extends ServerElement {
 	 */
 	public ISoundSphere getSoundSphere() {
 		return soundSphere;
+	}
+
+	/**
+	 * Sends a request to the remote to add an effect on an audio stream.
+	 * 
+	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
+	 * @param index    The index at which the effect shall be added. If the index is greater than the size of the list of effect
+	 * @param effect   The effect to add.
+	 * 
+	 */
+	public void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect) {
+		if (vocalClient == null)
+			return;
+
+		vocalClient.addEffect(speaking, index, effect);
+	}
+
+	/**
+	 * Sends a request to remove an effect from an audio stream.
+	 * 
+	 * @param speaking   The speaking player, the audio stream for which an effect shall be removed.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffect(IVoxyPlayer speaking, String effectName) {
+		if (vocalClient == null)
+			return;
+
+		vocalClient.removeEffect(speaking, effectName);
+	}
+
+	/**
+	 * Sends a request to update the parameters of an effect.
+	 * 
+	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
+	 * @param effect   The effect to remove.
+	 */
+	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect) {
+		if (vocalClient == null)
+			return;
+
+		vocalClient.updateEffect(speaking, effect);
 	}
 
 	/**

@@ -57,32 +57,6 @@ public interface IVoxyPlayer extends ISource {
 	boolean isPlayback();
 
 	/**
-	 * Set the effect to apply on the audio stream of the speaking player.
-	 * 
-	 * @param speaker    The player that is speaking.
-	 * @param effectName The name of the effect to apply on the audio stream of the speaking player.
-	 * @param holder     A holder that contains the effect name and gather effect parameter's name / parameter's value.
-	 */
-	void addEffect(IVoxyPlayer speaker, int index, IEffect holder);
-
-	/**
-	 * Stops the effect associated to the given effectName. The effect will transition smoothly from applied to not applied. Once
-	 * stopped completely, the effect will be removed.
-	 * 
-	 * @param name       The name of the audio stream for which an effect shall be removed.
-	 * @param effectName The name of the effect to remove.
-	 */
-	void removeEffect(IVoxyPlayer speaker, String effectName);
-
-	/**
-	 * Update the parameters of an effect. The parameters defines how the effect modifies the audio stream.
-	 * 
-	 * @param name   The name of the audio stream on which an effect shall be modified.
-	 * @param holder A holder that contains the effect name and gather effect parameter's name / parameter's value.
-	 */
-	void updateEffect(IVoxyPlayer speaker, IEffect holder);
-
-	/**
 	 * @return True if the player disabled it speakers, false otherwise.
 	 */
 	boolean isDeaf();
@@ -97,4 +71,29 @@ public interface IVoxyPlayer extends ISource {
 	 *         each other.
 	 */
 	ISoundSphere getSoundSphere();
+
+	/**
+	 * Adds an effect on the audio stream of the speaking player.
+	 * 
+	 * @param speaking The speaking player, ie the audio stream for which an effect shall be added.
+	 * @param index    The index at which the effect shall be added. If the index is greater than the size of the list of effect
+	 * @param effect   The effect to add.
+	 */
+	void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect);
+
+	/**
+	 * Removes an effect, if registered, to apply on the audio stream of a player.
+	 * 
+	 * @param speaking   The speaking player, ie the audio stream for which an effect shall be removed.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffect(IVoxyPlayer speaking, String effectName);
+
+	/**
+	 * Updates the parameters of an effect.
+	 * 
+	 * @param speaking The speaking player, ie the audio stream for which an effect shall be updated.
+	 * @param effect   The effect to update.
+	 */
+	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect);
 }

@@ -2,9 +2,9 @@ package fr.pederobien.voxy.server.impl;
 
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
-import fr.pederobien.voxy.server.interfaces.IEffect;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
 import fr.pederobien.voxy.server.interfaces.ISource;
+import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
@@ -33,7 +33,7 @@ public class VoxyPlayer implements IVoxyPlayer {
 
 	@Override
 	public IVoxyRoom getRoom() {
-		return impl.getRoom().getExternal();
+		return impl.getRoom() == null ? null : impl.getRoom().getExternal();
 	}
 
 	@Override
@@ -81,21 +81,6 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
-	public void addEffect(IVoxyPlayer speaker, int index, IEffect holder) {
-		impl.addEffect(speaker, index, holder);
-	}
-
-	@Override
-	public void removeEffect(IVoxyPlayer speaker, String effectName) {
-		impl.removeEffect(speaker, effectName);
-	}
-
-	@Override
-	public void updateEffect(IVoxyPlayer speaker, IEffect holder) {
-		impl.updateEffect(speaker, holder);
-	}
-
-	@Override
 	public boolean isDeaf() {
 		return impl.isDeaf();
 	}
@@ -108,6 +93,21 @@ public class VoxyPlayer implements IVoxyPlayer {
 	@Override
 	public ISoundSphere getSoundSphere() {
 		return impl.getSoundSphere();
+	}
+
+	@Override
+	public void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect) {
+		impl.addEffect(speaking, index, effect);
+	}
+
+	@Override
+	public void removeEffect(IVoxyPlayer speaking, String effectName) {
+		impl.removeEffect(speaking, effectName);
+	}
+
+	@Override
+	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect) {
+		impl.updateEffect(speaking, effect);
 	}
 
 	@Override

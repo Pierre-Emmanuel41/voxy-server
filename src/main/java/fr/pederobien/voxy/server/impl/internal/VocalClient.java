@@ -14,9 +14,6 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
-import fr.pederobien.voxy.common.impl.VoxyManagers;
-import fr.pederobien.voxy.common.impl.effects.Effect;
-import fr.pederobien.voxy.common.impl.effects.EffectManager;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamAddEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamRemoveEffectRequest;
@@ -24,13 +21,16 @@ import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamUpdateEffectRequ
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest.VolumeInfo;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
+import fr.pederobien.voxy.server.event.VoxyEffectAddPostEvent;
+import fr.pederobien.voxy.server.event.VoxyEffectRemovePostEvent;
+import fr.pederobien.voxy.server.event.VoxyEffectUpdatePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
-import fr.pederobien.voxy.server.interfaces.IEffect;
+import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
+import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
-	private final EffectManager effectManager;
 	private VoxyPlayerImpl player;
 
 	/**
@@ -43,7 +43,6 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		super(vocalServer.getServer(), client);
 
 		this.vocalServer = vocalServer;
-		effectManager = VoxyManagers.instance().getEffectManager();
 
 		// Registering event handler
 		client.addRequestHandler(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, this::onPlayerSpeakEvent);
@@ -92,47 +91,44 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	/**
 	 * Sends a request to the remote to add an effect on an audio stream.
 	 * 
-	 * @param playerName The name of the speaking player, ie the name of the audio stream.
-	 * @param index      The index at which the effect shall be added. If the index is greater than the size of the list of effect
-	 * @param holder     A holder that contains the effect name and gather effect parameter's name / parameter's value.
+	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
+	 * @param index    The index at which the effect shall be added. If the index is greater than the size of the list of effect
+	 * @param effect   The effect to add.
 	 * 
 	 */
-	public void addEffect(String playerName, int index, IEffect holder) {
-		Effect effect = effectManager.getEffect(holder.getEffectName(), holder.getParametersMap());
-		if (effect == null) {
-			String format = "Cannot retrieve effect associated to %s";
-			warning(format, holder);
+	public void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect) {
+		if (!(effect instanceof VoxyEffect))
 			return;
-		}
 
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_ADD_EFFECT, new PlayerAudioStreamAddEffectRequest(playerName, (byte) index, effect));
+		VoxyEffect e = (VoxyEffect) effect;
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_ADD_EFFECT, new PlayerAudioStreamAddEffectRequest(speaking.getName(), (byte) index, e.unwrap()));
+		EventManager.callEvent(new VoxyEffectAddPostEvent(effect, speaking, player.getExternal(), index));
 	}
 
 	/**
 	 * Sends a request to remove an effect from an audio stream.
 	 * 
-	 * @param playerName The name of the speaking player, ie the name of the audio stream.
+	 * @param speaking   The speaking player, the audio stream for which an effect shall be removed.
 	 * @param effectName The name of the effect to remove.
 	 */
-	public void removeEffect(String playerName, String effectName) {
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_REMOVE_EFFECT, new PlayerAudioStreamRemoveEffectRequest(playerName, effectName));
+	public void removeEffect(IVoxyPlayer speaking, String effectName) {
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_REMOVE_EFFECT, new PlayerAudioStreamRemoveEffectRequest(speaking.getName(), effectName));
+		EventManager.callEvent(new VoxyEffectRemovePostEvent(effectName, speaking, player.getExternal()));
 	}
 
 	/**
 	 * Sends a request to update the parameters of an effect.
 	 * 
-	 * @param name   The name of the audio stream for which an effect shall be removed.
-	 * @param holder A holder that contains the effect name and gather effect parameter's name / parameter's value.
+	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
+	 * @param effect   The effect to remove.
 	 */
-	public void updateEffect(String playerName, IEffect holder) {
-		Effect effect = effectManager.getEffect(holder.getEffectName(), holder.getParametersMap());
-		if (effect == null) {
-			String format = "Cannot retrieve effect associated to %s";
-			warning(format, holder);
+	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect) {
+		if (!(effect instanceof VoxyEffect))
 			return;
-		}
 
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_UPDATE_EFFECT, new PlayerAudioStreamUpdateEffectRequest(playerName, effect));
+		VoxyEffect e = (VoxyEffect) effect;
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_UPDATE_EFFECT, new PlayerAudioStreamUpdateEffectRequest(speaking.getName(), e.unwrap()));
+		EventManager.callEvent(new VoxyEffectUpdatePostEvent(effect, speaking, player.getExternal()));
 	}
 
 	/**
@@ -143,6 +139,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 * @param algorithm The algorithm used to compress the audio stream.
 	 */
 	public void onPlayerSpeaking(String name, byte[] sample, byte algorithm) {
+		info("Notifying %s", player.getName());
 		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(name, sample, algorithm));
 	}
 
