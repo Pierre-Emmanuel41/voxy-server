@@ -46,6 +46,9 @@ public class VoxyEffect implements IVoxyEffect {
 
 		try {
 			parameter.fromString(value);
+			if (parameter.getValue() == null)
+				return false;
+
 		} catch (Exception e) {
 			return false;
 		}
@@ -59,7 +62,7 @@ public class VoxyEffect implements IVoxyEffect {
 		if (parameter == null)
 			return null;
 
-		return new ParameterDescription(name, parameter.getUnit(), parameter.getValueDataType());
+		return new ParameterDescription(name, parameter.getConstraints(), parameter.getUnit(), parameter.getValueDataType());
 	}
 
 	@Override

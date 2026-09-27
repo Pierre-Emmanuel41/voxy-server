@@ -6,6 +6,7 @@ public interface IVoxyEffect {
 
 	public class ParameterDescription {
 		private final String name;
+		private final String constraints;
 		private final String unit;
 		private final Class<?> clazz;
 
@@ -17,8 +18,9 @@ public interface IVoxyEffect {
 		 * @param clazz The data type of the value of the parameter.
 		 * @param value The value of the parameter.
 		 */
-		public ParameterDescription(String name, String unit, Class<?> clazz) {
+		public ParameterDescription(String name, String constraints, String unit, Class<?> clazz) {
 			this.name = name;
+			this.constraints = constraints;
 			this.unit = unit;
 			this.clazz = clazz;
 		}
@@ -28,6 +30,13 @@ public interface IVoxyEffect {
 		 */
 		public String getName() {
 			return name;
+		}
+
+		/**
+		 * @return An explanation about the constraints the parameter's value shall meet.
+		 */
+		public String getConstraints() {
+			return constraints;
 		}
 
 		/**
