@@ -12,11 +12,11 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerCoordinateChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
-import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingEvent;
 import fr.pederobien.voxy.server.interfaces.ISoundVolumes;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
@@ -45,6 +45,7 @@ public class SoundManager implements IEventListener {
 	 * @param algorithm The algorithm used to compress the audio sample.
 	 */
 	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, byte algorithm) {
+		Logger.info("%s is speaking", source.getName());
 		List<VoxyPlayerImpl> listeners = players.filter(player -> filter(source, player));
 
 		for (VoxyPlayerImpl listener : listeners)
@@ -124,10 +125,10 @@ public class SoundManager implements IEventListener {
 		if (listener.isDeaf())
 			return false;
 
-		if (listener.equals(speaker))
-			return speaker.isPlayback();
-
 		if (speaker.isMuteBy(listener))
+			return false;
+
+		if (listener.equals(speaker))
 			return false;
 
 		return hearTable.canHear(speaker.getExternal(), listener.getExternal());
@@ -153,7 +154,6 @@ public class SoundManager implements IEventListener {
 		 */
 		public HearTable() {
 			table = new HashMap<IVoxyPlayer, Map<IVoxyPlayer, ISoundVolumes>>();
-
 			lock = new Object();
 		}
 

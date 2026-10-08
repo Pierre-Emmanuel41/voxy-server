@@ -20,10 +20,12 @@ import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamRemoveEffectRequ
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamUpdateEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamVolumesRequest.VolumeInfo;
+import fr.pederobien.voxy.common.impl.requests.PlayerPlaybackRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.server.event.VoxyEffectAddPostEvent;
 import fr.pederobien.voxy.server.event.VoxyEffectRemovePostEvent;
 import fr.pederobien.voxy.server.event.VoxyEffectUpdatePostEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
 import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
@@ -86,6 +88,16 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 */
 	public VoxyPlayerImpl getPlayer() {
 		return player;
+	}
+
+	/**
+	 * Sends a request to the remote to enable or disable the playback.
+	 * 
+	 * @param isPlayback True if the playback is enabled, false otherwise.
+	 */
+	public void setPlayback(boolean isPlayback) {
+		send(VoxyIdentifiers.PLAYER_PLAYBACK, new PlayerPlaybackRequest(player.getName(), isPlayback));
+		EventManager.callEvent(new VoxyPlayerPlaybackChangePostEvent(player.getExternal(), isPlayback));
 	}
 
 	/**

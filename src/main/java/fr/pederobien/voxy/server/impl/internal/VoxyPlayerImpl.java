@@ -10,7 +10,6 @@ import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteByChangePreEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerMuteStatusChangePreEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePreEvent;
 import fr.pederobien.voxy.server.impl.VoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
@@ -190,7 +189,7 @@ public class VoxyPlayerImpl extends ServerElement {
 		this.playback = playback;
 
 		debug("Playback %s for %s", playback ? "enabled" : "disabled", external.getName());
-		EventManager.callEvent(new VoxyPlayerPlaybackChangePostEvent(external, playback));
+		vocalClient.setPlayback(playback);
 	}
 
 	/**
