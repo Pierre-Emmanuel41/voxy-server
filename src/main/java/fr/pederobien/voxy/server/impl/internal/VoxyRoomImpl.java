@@ -136,7 +136,7 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 
 	@EventHandler
 	private void onRoomRemoved(RemoveRoomPostEvent event) {
-		if (event.getRoom() != this)
+		if (event.getRoom() != external)
 			return;
 
 		vocalServer.close();
