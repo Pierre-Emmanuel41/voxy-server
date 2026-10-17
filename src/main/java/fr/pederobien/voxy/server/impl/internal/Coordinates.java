@@ -1,7 +1,7 @@
 package fr.pederobien.voxy.server.impl.internal;
 
 import fr.pederobien.utils.event.EventManager;
-import fr.pederobien.voxy.server.event.VoxyPlayerCoordinateChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerCoordinatesChangedEvent;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
 
 public class Coordinates implements ICoordinates {
@@ -99,11 +99,13 @@ public class Coordinates implements ICoordinates {
 		if (Math.abs(roll - previousRoll) > ANGLE_GAP)
 			this.roll = roll;
 
-		boolean position = previousX != x || previousY != y || previousZ != z;
-		boolean head = previousYaw != yaw || previousPitch != pitch || previousRoll != roll;
+		boolean positionChanged = previousX != x || previousY != y || previousZ != z;
+		boolean headOrientationChanged = previousYaw != yaw || previousPitch != pitch || previousRoll != roll;
 
 		// In case of at one coordinate has changed
-		if (position || head)
-			EventManager.callEvent(new VoxyPlayerCoordinateChangedEvent(player.getExternal(), position, head));
+		if (positionChanged || headOrientationChanged) {
+			boolean headOnly = headOrientationChanged && !positionChanged;
+			EventManager.callEvent(new VoxyPlayerCoordinatesChangedEvent(player.getExternal(), headOnly));
+		}
 	}
 }

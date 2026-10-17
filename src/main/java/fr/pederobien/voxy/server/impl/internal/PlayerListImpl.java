@@ -90,23 +90,11 @@ public class PlayerListImpl extends ServerElement {
 	public void validate(VoxyPlayerImpl player) {
 		synchronized (lock) {
 			pendings.remove(player);
-		}
-
-		add(player);
-	}
-
-	/**
-	 * Adds the player to the list and throws a JoinRoomPostEvent to notify each client.
-	 * 
-	 * @param player The player implementation to add to the list.
-	 */
-	public void add(VoxyPlayerImpl player) {
-		synchronized (lock) {
 			players.add(player);
+			player.setRoom(room);
 		}
 
 		info("Player %s joined the room %s", player, room);
-		player.setRoom(room);
 		EventManager.callEvent(new JoinRoomPostEvent(room.getExternal(), player.getExternal()));
 	}
 

@@ -1,7 +1,10 @@
 package fr.pederobien.voxy.server.impl.internal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import fr.pederobien.utils.event.EventManager;
@@ -21,6 +24,7 @@ import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 public class VoxyPlayerImpl extends ServerElement {
 	private final String name;
 	private final List<VoxyPlayerImpl> muteByPlayers;
+	private final Map<String, List<IVoxyEffect>> effects;
 	private final ICoordinates coordinates;
 	private final ISoundSphere soundSphere;
 	private VocalClient vocalClient;
@@ -49,6 +53,7 @@ public class VoxyPlayerImpl extends ServerElement {
 
 		lock = new Object();
 		muteByPlayers = new ArrayList<VoxyPlayerImpl>();
+		effects = new HashMap<String, List<IVoxyEffect>>();
 		coordinates = new Coordinates(this);
 		soundSphere = new SoundSphere(this);
 		external = new VoxyPlayer(this);
@@ -235,18 +240,54 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
-	 * Sends a request to the remote to add an effect on an audio stream.
+	 * Get the list of effects applied on the audio stream of the given player.
 	 * 
-	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
-	 * @param index    The index at which the effect shall be added. If the index is greater than the size of the list of effect
-	 * @param effect   The effect to add.
+	 * @param name The name of the player.
+	 * @return The list of name of effects currently applied on the audio stream of the given player.
+	 */
+	public List<IVoxyEffect> getEffects(String name) {
+		synchronized (lock) {
+			return effects.get(name);
+		}
+	}
+
+	/**
+	 * Sends a request to the remote to add or update an effect on an audio stream.
+	 * 
+	 * @param speaker The speaking player, the audio stream for which an effect shall be added.
+	 * @param effect  The effect to add.
 	 * 
 	 */
-	public void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect) {
+	public void addOrUpdateEffect(VoxyPlayerImpl speaker, IVoxyEffect effect) {
 		if (vocalClient == null)
 			return;
 
-		vocalClient.addEffect(speaking, index, effect);
+		boolean present = false;
+		synchronized (lock) {
+			List<IVoxyEffect> list = effects.get(speaker.getName());
+			if (list == null) {
+				list = new ArrayList<IVoxyEffect>();
+				list.add(effect);
+				effects.put(speaker.getName(), list);
+			} else {
+				Iterator<IVoxyEffect> iterator = list.iterator();
+
+				while (iterator.hasNext() && !present) {
+					IVoxyEffect e = iterator.next();
+					if (e.getName().equals(effect.getName())) {
+						iterator.remove();
+						present = true;
+					}
+				}
+
+				list.add(effect);
+			}
+		}
+
+		if (present)
+			vocalClient.updateEffect(speaker, effect);
+		else
+			vocalClient.addEffect(speaker, effect);
 	}
 
 	/**
@@ -255,24 +296,86 @@ public class VoxyPlayerImpl extends ServerElement {
 	 * @param speaking   The speaking player, the audio stream for which an effect shall be removed.
 	 * @param effectName The name of the effect to remove.
 	 */
-	public void removeEffect(IVoxyPlayer speaking, String effectName) {
+	public void removeEffect(VoxyPlayerImpl speaking, String effectName) {
 		if (vocalClient == null)
 			return;
+
+		synchronized (lock) {
+			List<IVoxyEffect> list = effects.get(speaking.getName());
+
+			// No need to go further , there is no effect registered for the given player
+			if (list == null)
+				return;
+
+			Iterator<IVoxyEffect> iterator = list.iterator();
+			boolean removed = false;
+			while (iterator.hasNext() && !removed) {
+				IVoxyEffect effect = iterator.next();
+				if (effect.getName().equals(effectName)) {
+					iterator.remove();
+					removed = true;
+				}
+			}
+
+			// No need to go further as the effect is no applied on the client side
+			if (!removed)
+				return;
+		}
 
 		vocalClient.removeEffect(speaking, effectName);
 	}
 
 	/**
-	 * Sends a request to update the parameters of an effect.
+	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
+	 * effect already registered for the given name, then it is updated.
 	 * 
-	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
-	 * @param effect   The effect to remove.
+	 * @param effect The effect to add or update.
 	 */
-	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect) {
-		if (vocalClient == null)
+	public void addOrUpdateEffectForEachSpeakingPlayer(IVoxyEffect effect) {
+		if (room == null)
 			return;
 
-		vocalClient.updateEffect(speaking, effect);
+		room.addOrUpdateEffectForEachSpeakingPlayer(this, effect);
+	}
+
+	/**
+	 * Adds an effect on the audio stream of the speaking player for each listening player. If there is an effect already registered
+	 * for the given name, then it is updated.
+	 * 
+	 * @param effect The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachListeningPlayer(IVoxyEffect effect) {
+		if (room == null)
+			return;
+
+		room.addOrUpdateEffectForEachListeningPlayer(this, effect);
+	}
+
+	/**
+	 * Sends a request to the given listener to remove an effect on the audio stream of each player that are in the same room.
+	 * 
+	 * @param listener   The player that shall remove an effect on each audio stream it receives.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachSpeakingPlayer(String effectName) {
+		if (room == null)
+			return;
+
+		room.removeEffectForEachSpeakingPlayer(this, effectName);
+	}
+
+	/**
+	 * Sends a request to each player that are in the same room as the given speaking player to remove an effect on the audio stream
+	 * of speaking player.
+	 * 
+	 * @param speaker    The player for which an effect shall be applied on the audio stream.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachListeningPlayer(String effectName) {
+		if (room == null)
+			return;
+
+		room.removeEffectForEachListeningPlayer(this, effectName);
 	}
 
 	/**

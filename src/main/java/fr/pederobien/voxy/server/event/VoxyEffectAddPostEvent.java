@@ -8,7 +8,6 @@ import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 public class VoxyEffectAddPostEvent extends VoxyEffectEvent {
 	private final IVoxyPlayer speaking;
 	private final IVoxyPlayer listening;
-	private final int index;
 
 	/**
 	 * Creates an event thrown when an effect is added.
@@ -18,12 +17,11 @@ public class VoxyEffectAddPostEvent extends VoxyEffectEvent {
 	 * @param listening The listening player.
 	 * @param index     The index at which the effect shall be added.
 	 */
-	public VoxyEffectAddPostEvent(IVoxyEffect effect, IVoxyPlayer speaking, IVoxyPlayer listening, int index) {
+	public VoxyEffectAddPostEvent(IVoxyEffect effect, IVoxyPlayer speaking, IVoxyPlayer listening) {
 		super(effect);
 
 		this.speaking = speaking;
 		this.listening = listening;
-		this.index = index;
 	}
 
 	/**
@@ -40,20 +38,12 @@ public class VoxyEffectAddPostEvent extends VoxyEffectEvent {
 		return listening;
 	}
 
-	/**
-	 * @return The index at which the effect shall be added.
-	 */
-	public int getIndex() {
-		return index;
-	}
-
 	@Override
 	public String toString() {
 		StringJoiner joiner = new StringJoiner(",", "{", "}");
 		joiner.add("effect=" + getEffect().getName());
 		joiner.add("speaking=" + getSpeaking().getName());
 		joiner.add("listening=" + getListening().getName());
-		joiner.add("index=" + getIndex());
 
 		return String.format("%s_%s", getName(), joiner);
 	}

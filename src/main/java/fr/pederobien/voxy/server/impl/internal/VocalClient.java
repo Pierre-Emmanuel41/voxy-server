@@ -29,7 +29,6 @@ import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
 import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
-import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class VocalClient extends ClientWrapper implements IEventListener {
 	private final VocalServer vocalServer;
@@ -103,44 +102,43 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	/**
 	 * Sends a request to the remote to add an effect on an audio stream.
 	 * 
-	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
-	 * @param index    The index at which the effect shall be added. If the index is greater than the size of the list of effect
-	 * @param effect   The effect to add.
+	 * @param speaker The speaking player, the audio stream for which an effect shall be added.
+	 * @param effect  The effect to add.
 	 * 
 	 */
-	public void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect) {
+	public void addEffect(VoxyPlayerImpl speaker, IVoxyEffect effect) {
 		if (!(effect instanceof VoxyEffect))
 			return;
 
 		VoxyEffect e = (VoxyEffect) effect;
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_ADD_EFFECT, new PlayerAudioStreamAddEffectRequest(speaking.getName(), (byte) index, e.unwrap()));
-		EventManager.callEvent(new VoxyEffectAddPostEvent(effect, speaking, player.getExternal(), index));
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_ADD_EFFECT, new PlayerAudioStreamAddEffectRequest(speaker.getName(), e.unwrap()));
+		EventManager.callEvent(new VoxyEffectAddPostEvent(effect, speaker.getExternal(), player.getExternal()));
 	}
 
 	/**
 	 * Sends a request to remove an effect from an audio stream.
 	 * 
-	 * @param speaking   The speaking player, the audio stream for which an effect shall be removed.
+	 * @param speaker    The speaking player, the audio stream for which an effect shall be removed.
 	 * @param effectName The name of the effect to remove.
 	 */
-	public void removeEffect(IVoxyPlayer speaking, String effectName) {
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_REMOVE_EFFECT, new PlayerAudioStreamRemoveEffectRequest(speaking.getName(), effectName));
-		EventManager.callEvent(new VoxyEffectRemovePostEvent(effectName, speaking, player.getExternal()));
+	public void removeEffect(VoxyPlayerImpl speaker, String effectName) {
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_REMOVE_EFFECT, new PlayerAudioStreamRemoveEffectRequest(speaker.getName(), effectName));
+		EventManager.callEvent(new VoxyEffectRemovePostEvent(effectName, speaker.getExternal(), player.getExternal()));
 	}
 
 	/**
 	 * Sends a request to update the parameters of an effect.
 	 * 
-	 * @param speaking The speaking player, the audio stream for which an effect shall be added.
-	 * @param effect   The effect to remove.
+	 * @param speaker The speaking player, the audio stream for which an effect shall be added.
+	 * @param effect  The effect to remove.
 	 */
-	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect) {
+	public void updateEffect(VoxyPlayerImpl speaker, IVoxyEffect effect) {
 		if (!(effect instanceof VoxyEffect))
 			return;
 
 		VoxyEffect e = (VoxyEffect) effect;
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_UPDATE_EFFECT, new PlayerAudioStreamUpdateEffectRequest(speaking.getName(), e.unwrap()));
-		EventManager.callEvent(new VoxyEffectUpdatePostEvent(effect, speaking, player.getExternal()));
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_UPDATE_EFFECT, new PlayerAudioStreamUpdateEffectRequest(speaker.getName(), e.unwrap()));
+		EventManager.callEvent(new VoxyEffectUpdatePostEvent(effect, speaker.getExternal(), player.getExternal()));
 	}
 
 	/**
@@ -151,7 +149,6 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 * @param algorithm The algorithm used to compress the audio stream.
 	 */
 	public void onPlayerSpeaking(String name, byte[] sample, byte algorithm) {
-		info("Notifying %s", player.getName());
 		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(name, sample, algorithm));
 	}
 

@@ -22,7 +22,9 @@ import fr.pederobien.voxy.common.impl.VoxyManagers;
 import fr.pederobien.voxy.server.event.VoxyServerCloseEvent;
 import fr.pederobien.voxy.server.event.VoxyServerDisposeEvent;
 import fr.pederobien.voxy.server.event.VoxyServerOpenEvent;
+import fr.pederobien.voxy.server.impl.EffectManager;
 import fr.pederobien.voxy.server.impl.VoxyServer;
+import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServer;
 import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
@@ -30,8 +32,9 @@ import fr.pederobien.voxy.server.interfaces.IVoxyServerConfig;
 public class VoxyServerImpl implements IEventListener {
 	private final IVoxyServerConfig config;
 	private final IEthernetProtocolServer server;
-	private final RoomListImpl roomsImpl;
 	private final List<VoxyClient> clients;
+	private final RoomListImpl rooms;
+	private final EffectManager effectManager;
 	private final Object lock;
 
 	private final IVoxyServer external;
@@ -59,8 +62,9 @@ public class VoxyServerImpl implements IEventListener {
 		configuration.setServerHealTime(config.getTcpConfig().getServerHealTime());
 		server = Messenger.createTcpServer(configuration);
 
-		roomsImpl = new RoomListImpl(this);
+		rooms = new RoomListImpl(this);
 		clients = new ArrayList<VoxyClient>();
+		effectManager = new EffectManager();
 		lock = new Object();
 
 		external = new VoxyServer(this);
@@ -95,7 +99,7 @@ public class VoxyServerImpl implements IEventListener {
 	public boolean open() {
 		AtomicBoolean success = new AtomicBoolean(server.open());
 		if (success.get())
-			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().open()));
+			rooms.foreach(room -> success.set(success.get() && room.getVocalServer().open()));
 
 		return success.get();
 	}
@@ -117,7 +121,7 @@ public class VoxyServerImpl implements IEventListener {
 			// Clearing the list of clients
 			clients.clear();
 
-			roomsImpl.foreach(room -> success.set(success.get() && room.onServerClosed()));
+			rooms.foreach(room -> success.set(success.get() && room.onServerClosed()));
 		}
 
 		return success.get();
@@ -131,7 +135,7 @@ public class VoxyServerImpl implements IEventListener {
 	public boolean dispose() {
 		AtomicBoolean success = new AtomicBoolean(server.dispose());
 		if (success.get())
-			roomsImpl.foreach(room -> success.set(success.get() && room.getVocalServer().dispose()));
+			rooms.foreach(room -> success.set(success.get() && room.getVocalServer().dispose()));
 
 		return success.get();
 	}
@@ -161,7 +165,7 @@ public class VoxyServerImpl implements IEventListener {
 	 * @return The list of rooms associated to this server.
 	 */
 	public RoomListImpl getRooms() {
-		return roomsImpl;
+		return rooms;
 	}
 
 	/**
@@ -192,6 +196,129 @@ public class VoxyServerImpl implements IEventListener {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Get the implementation object of the given player interface.
+	 * 
+	 * @param player The interface of the player.
+	 * @return The implementation associated to the given interface.
+	 */
+	public VoxyPlayerImpl getPlayerImpl(IVoxyPlayer player) {
+		synchronized (lock) {
+			for (VoxyClient client : clients)
+				if (client.getPlayer().getExternal() == player)
+					return client.getPlayer();
+		}
+
+		// Not found by reference, search by name
+		return getPlayerByName(player.getName());
+	}
+
+	/**
+	 * @return The object that manages effects.
+	 */
+	public EffectManager getEffectManager() {
+		return effectManager;
+	}
+
+	/**
+	 * Adds an effect on the audio stream of the speaking player. If there is an effect already registered for the given name, then it
+	 * is updated.
+	 * 
+	 * @param listening The name of the listening player to notify.
+	 * @param speaking  The name of the speaking player, ie the audio stream for which an effect shall be added or updated.
+	 * @param effect    The effect to add or update..
+	 */
+	public void addOrUpdateEffect(IVoxyPlayer listening, IVoxyPlayer speaking, IVoxyEffect effect) {
+		VoxyPlayerImpl listener = getPlayerImpl(listening);
+		if (listener == null || listener.getRoom() == null)
+			return;
+
+		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
+		if (speaker == null || speaker.getRoom() == null || speaker.getRoom() != listener.getRoom())
+			return;
+
+		listener.addOrUpdateEffect(speaker, effect);
+	}
+
+	/**
+	 * Removes an effect, if registered, on the audio stream of a player.
+	 * 
+	 * @param listening  The name of the player to notify.
+	 * @param speaking   The name of the speaking player, ie the audio stream for which an effect shall be removed.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffect(IVoxyPlayer listening, IVoxyPlayer speaking, String effectName) {
+		VoxyPlayerImpl listener = getPlayerImpl(listening);
+		if (listener == null || listener.getRoom() == null)
+			return;
+
+		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
+		if (speaker == null || speaker.getRoom() == null || speaker.getRoom() != listener.getRoom())
+			return;
+
+		listener.removeEffect(speaker, effectName);
+	}
+
+	/**
+	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
+	 * effect already registered for the given name, then it is updated. The server tracks player joining / leaving the room in which
+	 * the player is so that effect are added or removed accordingly.
+	 * 
+	 * @param listening The name of the listening player to notify.
+	 * @param effect    The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachSpeakingPlayer(IVoxyPlayer listening, IVoxyEffect effect) {
+		VoxyPlayerImpl listener = getPlayerImpl(listening);
+		if (listener == null)
+			return;
+
+		listener.addOrUpdateEffectForEachSpeakingPlayer(effect);
+	}
+
+	/**
+	 * Adds an effect on the audio stream on the speaking player for each listening player. If there is an effect already registered
+	 * for the given name, then it is updated. The server tracks player joining / leaving the room in which the player is so that
+	 * effect are added or removed.
+	 * 
+	 * @param speaking The name of the speaking player whose the audio stream shall be modified by an effect.
+	 * @param effect   The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachListeningPlayer(IVoxyPlayer speaking, IVoxyEffect effect) {
+		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
+		if (speaker == null)
+			return;
+
+		speaker.addOrUpdateEffectForEachListeningPlayer(effect);
+	}
+
+	/**
+	 * Removes an effect on the audio stream of each speaking player registered in the same room as the listening player.
+	 * 
+	 * @param listening  The name of the player that shall remove an effect on each audio stream it receives.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachSpeakingPlayer(IVoxyPlayer listening, String effectName) {
+		VoxyPlayerImpl listener = getPlayerImpl(listening);
+		if (listener == null)
+			return;
+
+		listener.removeEffectForEachSpeakingPlayer(effectName);
+	}
+
+	/**
+	 * Removes an effect on the audio stream of the speaking player.
+	 * 
+	 * @param speaking   The name of the player for which an effect shall be removed.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachListeningPlayer(IVoxyPlayer speaking, String effectName) {
+		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
+		if (speaker == null)
+			return;
+
+		speaker.removeEffectForEachListeningPlayer(effectName);
 	}
 
 	/**

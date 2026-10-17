@@ -1,5 +1,8 @@
 package fr.pederobien.voxy.server.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import fr.pederobien.voxy.server.impl.internal.VoxyPlayerImpl;
 import fr.pederobien.voxy.server.interfaces.ICoordinates;
 import fr.pederobien.voxy.server.interfaces.ISoundSphere;
@@ -96,18 +99,9 @@ public class VoxyPlayer implements IVoxyPlayer {
 	}
 
 	@Override
-	public void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect) {
-		impl.addEffect(speaking, index, effect);
-	}
-
-	@Override
-	public void removeEffect(IVoxyPlayer speaking, String effectName) {
-		impl.removeEffect(speaking, effectName);
-	}
-
-	@Override
-	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect) {
-		impl.updateEffect(speaking, effect);
+	public List<String> getEffects(String name) {
+		List<IVoxyEffect> list = impl.getEffects(name);
+		return list == null ? new ArrayList<String>() : list.stream().map(effect -> effect.getName()).toList();
 	}
 
 	@Override

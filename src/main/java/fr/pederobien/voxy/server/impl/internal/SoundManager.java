@@ -11,13 +11,14 @@ import fr.pederobien.utils.event.IEventListener;
 import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.server.event.JoinRoomPostEvent;
 import fr.pederobien.voxy.server.event.LeaveRoomPostEvent;
-import fr.pederobien.voxy.server.event.VoxyPlayerCoordinateChangedEvent;
+import fr.pederobien.voxy.server.event.VoxyPlayerCoordinatesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSpeakingEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereEnableChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerSphereRadiusChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
 import fr.pederobien.voxy.server.interfaces.ISoundVolumes;
+import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
 public class SoundManager implements IEventListener {
@@ -33,7 +34,6 @@ public class SoundManager implements IEventListener {
 		this.players = players;
 
 		hearTable = new HearTable();
-
 		EventManager.registerListener(this);
 	}
 
@@ -45,7 +45,6 @@ public class SoundManager implements IEventListener {
 	 * @param algorithm The algorithm used to compress the audio sample.
 	 */
 	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, byte algorithm) {
-		Logger.info("%s is speaking", source.getName());
 		List<VoxyPlayerImpl> listeners = players.filter(player -> filter(source, player));
 
 		for (VoxyPlayerImpl listener : listeners)
@@ -55,22 +54,55 @@ public class SoundManager implements IEventListener {
 		EventManager.callEvent(new VoxyPlayerSpeakingEvent(source.getExternal()));
 	}
 
+	/**
+	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
+	 * effect already registered for the given name, then it is updated.
+	 * 
+	 * @param listener The listening player to notify.
+	 * @param effect   The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachSpeakingPlayer(VoxyPlayerImpl listener, IVoxyEffect effect) {
+		hearTable.addOrUpdateEffectForEachSpeakingPlayer(listener, effect);
+	}
+
+	/**
+	 * Adds an effect on the audio stream of the speaking player for each listening player. If there is an effect already registered
+	 * for the given name, then it is updated.
+	 * 
+	 * @param speaker The speaking player to notify.
+	 * @param effect  The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachListeningPlayer(VoxyPlayerImpl speaker, IVoxyEffect effect) {
+		hearTable.addOrUpdateEffectForEachListeningPlayer(speaker, effect);
+	}
+
+	/**
+	 * Sends a request to the given listener to remove an effect on the audio stream of each player that are in the same room.
+	 * 
+	 * @param listener   The player that shall remove an effect on each audio stream it receives.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachSpeakingPlayer(VoxyPlayerImpl listener, String effectName) {
+		hearTable.removeEffectForEachSpeakingPlayer(listener, effectName);
+	}
+
+	/**
+	 * Sends a request to each player that are in the same room as the given speaking player to remove an effect on the audio stream
+	 * of speaking player.
+	 * 
+	 * @param speaker    The player for which an effect shall be applied on the audio stream.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachListeningPlayer(VoxyPlayerImpl speaker, String effectName) {
+		hearTable.removeEffectForEachListeningPlayer(speaker, effectName);
+	}
+
 	@EventHandler
 	private void onPlayerJoinedRoom(JoinRoomPostEvent event) {
 		if (event.getRoom() != players.getRoomImpl().getExternal())
 			return;
 
-		// Step 1: Getting the list of players already registered in the room
-		List<IVoxyPlayer> others = new ArrayList<IVoxyPlayer>();
-		for (IVoxyPlayer player : players.toList())
-			if (player != event.getPlayer())
-				others.add(player);
-
-		// Step 2: Checking if players can hear each other and volumes.
-		for (IVoxyPlayer other : others) {
-			hearTable.register(other, event.getPlayer(), other.getSoundSphere().computeVolumes(event.getPlayer()));
-			hearTable.register(event.getPlayer(), other, event.getPlayer().getSoundSphere().computeVolumes(other));
-		}
+		hearTable.register(players.getByName(event.getPlayer().getName()));
 	}
 
 	@EventHandler
@@ -82,11 +114,11 @@ public class SoundManager implements IEventListener {
 	}
 
 	@EventHandler
-	private void onPlayerCoordinatesChanged(VoxyPlayerCoordinateChangedEvent event) {
+	private void onPlayerCoordinatesChanged(VoxyPlayerCoordinatesChangedEvent event) {
 		if (players.getByName(event.getPlayer().getName()) == null)
 			return;
 
-		hearTable.computeVolumes(event.getPlayer(), event.positionChanged());
+		hearTable.computeVolumes(event.getPlayer(), event.headOnly());
 	}
 
 	@EventHandler
@@ -95,7 +127,7 @@ public class SoundManager implements IEventListener {
 			return;
 
 		debug("%s's sound sphere %s", event.getPlayer().getSoundSphere().isEnabled() ? "enabled" : "disabled");
-		hearTable.updatePlayerVolumes(event.getPlayer());
+		hearTable.computeVolumes(event.getPlayer(), true);
 	}
 
 	@EventHandler
@@ -104,14 +136,14 @@ public class SoundManager implements IEventListener {
 			return;
 
 		IVoxyPlayer player = event.getPlayer();
-		double xRadius = event.getPlayer().getSoundSphere().getXRadius();
-		double yRadius = event.getPlayer().getSoundSphere().getYRadius();
-		double zRadius = event.getPlayer().getSoundSphere().getZRadius();
+		double xRadius = player.getSoundSphere().getXRadius();
+		double yRadius = player.getSoundSphere().getYRadius();
+		double zRadius = player.getSoundSphere().getZRadius();
 
 		String format = "%s's sound sphere radius are now: [xRadius=%s, yRadius=%s, zRadius=%s]";
 		debug(format, player.getName(), xRadius, yRadius, zRadius);
 
-		hearTable.updatePlayerVolumes(player);
+		hearTable.computeVolumes(player, true);
 	}
 
 	/**
@@ -145,52 +177,62 @@ public class SoundManager implements IEventListener {
 	}
 
 	private class HearTable {
-		private static final double VOLUME_GAP = 0.01;
-		private final Map<IVoxyPlayer, Map<IVoxyPlayer, ISoundVolumes>> table;
+		private final Map<IVoxyPlayer, SpeakingPlayer> speakingPlayers;
 		private final Object lock;
 
 		/**
 		 * Creates a hear table. This table is responsible to indicate if a listening player can hear a speaking player.
 		 */
 		public HearTable() {
-			table = new HashMap<IVoxyPlayer, Map<IVoxyPlayer, ISoundVolumes>>();
+			speakingPlayers = new HashMap<IVoxyPlayer, SpeakingPlayer>();
 			lock = new Object();
 		}
 
 		/**
-		 * Registers a canHear status for the given speaker and listener.
+		 * Registers a player to this hear table.
 		 * 
-		 * @param speaker  The speaking player.
-		 * @param listener The listening player.
-		 * @param canHear  True if the listening player can hear the speaking player.
+		 * @param speaker The speaking player.
 		 */
-		public void register(IVoxyPlayer speaker, IVoxyPlayer listener, ISoundVolumes volumes) {
+		public void register(VoxyPlayerImpl speaker) {
+			Logger.info("[HearTable] - %s joined room %s", speaker, players.getRoomImpl().getName());
 			synchronized (lock) {
-				Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(speaker);
-				if (listeners == null) {
-					listeners = new HashMap<IVoxyPlayer, ISoundVolumes>();
-					table.put(speaker, listeners);
+				SpeakingPlayer speaking = speakingPlayers.get(speaker.getExternal());
+				if (speaking != null) {
+					Logger.info("[HearTable] - Player already registered");
+					return;
 				}
 
-				// Listener shall be unique
-				if (listeners.containsKey(listener))
-					return;
+				speaking = new SpeakingPlayer(speaker);
 
-				listeners.put(listener, volumes);
+				// Step 1: Computing sound volumes between the player to add and all the others
+				for (Map.Entry<IVoxyPlayer, SpeakingPlayer> entry : speakingPlayers.entrySet()) {
+					speaking.addListener(entry.getValue().getPlayer(), speaker.getSoundSphere().computeVolumes(entry.getKey()));
+					entry.getValue().addListener(speaker, entry.getKey().getSoundSphere().computeVolumes(speaker.getExternal()));
+				}
+
+				// Step 2: Adding the player to list of players.
+				speakingPlayers.put(speaker.getExternal(), speaking);
 			}
 		}
 
 		/**
-		 * Removes the given from this table.
+		 * Removes the given player from this table.
 		 * 
 		 * @param player The player to remove.
 		 */
 		public void unregister(IVoxyPlayer player) {
 			synchronized (lock) {
-				table.remove(player);
+				// Step 1: Removing the speaking player
+				SpeakingPlayer speaking = speakingPlayers.remove(player);
+				if (speaking == null)
+					return;
 
-				for (Map.Entry<IVoxyPlayer, Map<IVoxyPlayer, ISoundVolumes>> entry : table.entrySet())
-					entry.getValue().remove(player);
+				// Step 2: Clearing the list of listeners for this player
+				speaking.clearListeners();
+
+				// Step 3: Removing the player from the list of listeners of the other players.
+				for (Map.Entry<IVoxyPlayer, SpeakingPlayer> entry : speakingPlayers.entrySet())
+					entry.getValue().removeListener(player);
 			}
 		}
 
@@ -202,76 +244,199 @@ public class SoundManager implements IEventListener {
 		 * @return True if the listening player can hear the speaking player, false otherwise.
 		 */
 		public boolean canHear(IVoxyPlayer speaker, IVoxyPlayer listener) {
-			synchronized (lock) {
-				Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(listener);
-				if (listeners == null)
-					return false;
+			SpeakingPlayer speaking;
 
-				ISoundVolumes volumes = listeners.get(speaker);
-				return volumes == null ? false : volumes.getGlobal() != 0;
+			synchronized (lock) {
+				speaking = speakingPlayers.get(speaker);
+				if (speaking == null)
+					return true;
 			}
+
+			ListeningPlayer listening = speaking.getListener(listener);
+			if (listening == null)
+				return true;
+
+			return listening.getVolumes().getGlobal() > 0.0f;
 		}
 
 		/**
 		 * Handler to execute when a player moved in the game.
 		 * 
 		 * @param player   The player that moved.
-		 * @param position True if the player moved in one of the spatial direction.
+		 * @param headOnly True if the player moved only his head, false if it also moved in space.
 		 */
-		public void computeVolumes(IVoxyPlayer player, boolean position) {
+		public void computeVolumes(IVoxyPlayer player, boolean headOnly) {
+			List<VolumeChange> changes = null;
+
+			// reciprocity principle: If players can listen to another player,
+			// then theses players can speak to the player.
 			synchronized (lock) {
+				SpeakingPlayer speaking = speakingPlayers.get(player);
+				if (speaking == null)
+					return;
 
-				// Step 1: Updating the volumes for the other players if player's position has changed and their sound sphere is enabled
-				if (position) {
-					for (Map.Entry<IVoxyPlayer, Map<IVoxyPlayer, ISoundVolumes>> entry : table.entrySet()) {
-						if (entry.getValue().containsKey(player) && entry.getKey().getSoundSphere().isEnabled()) {
-							ISoundVolumes before = entry.getValue().get(player);
-							ISoundVolumes now = entry.getKey().getSoundSphere().computeVolumes(player);
+				List<ListeningPlayer> listeners = speaking.getListeners();
+				if (listeners.isEmpty())
+					return;
 
-							// Checking if volumes has changed enough to notify the client
-							if (checkVolumeChange(before, now)) {
-								entry.getValue().put(player, now);
+				// Step 1: Computing how listeners hear the player, skipped if the player only moved his head
+				if (!headOnly) {
+					for (ListeningPlayer listening : listeners) {
+						ISoundVolumes now = player.getSoundSphere().computeVolumes(listening.getPlayer());
 
-								EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(new VolumeChange(player, entry.getKey(), now)));
-							}
+						// Computed volumes changed significantly enough to be notified
+						if (listening.setVolumes(now)) {
+							if (changes == null)
+								changes = new ArrayList<VolumeChange>();
+
+							changes.add(new VolumeChange(player, listening.getPlayer(), now));
 						}
 					}
 				}
 
-				// Step 2: Updating volumes for this player if its sound sphere is enabled
-				if (player.getSoundSphere().isEnabled())
-					updatePlayerVolumes(player);
-			}
-		}
+				// Step 2: how the player hears its listeners (always — orientation may have changed)
+				for (ListeningPlayer listening : listeners) {
+					SpeakingPlayer listeningAsSpeaking = speakingPlayers.get(listening.getPlayer());
+					if (listeningAsSpeaking == null)
+						continue;
 
-		/**
-		 * Compute the volumes of the other player for the given player.
-		 * 
-		 * @param listener     The player for which the audio volumes of the other players shall be computed.
-		 * @param sphereEnable True if the player's sound sphere is enabled, false otherwise.
-		 */
-		public void updatePlayerVolumes(IVoxyPlayer listener) {
-			List<VolumeChange> changes = new ArrayList<VolumeChange>();
-			synchronized (lock) {
-				Map<IVoxyPlayer, ISoundVolumes> listeners = table.get(listener);
-				if (listeners == null)
-					return;
+					ListeningPlayer playerAsListening = listeningAsSpeaking.getListener(player);
+					if (playerAsListening == null)
+						continue;
 
-				for (Map.Entry<IVoxyPlayer, ISoundVolumes> entry : listeners.entrySet()) {
-					IVoxyPlayer speaker = entry.getKey();
-					ISoundVolumes before = entry.getValue();
-					ISoundVolumes now = listener.getSoundSphere().computeVolumes(speaker);
+					ISoundVolumes now = listening.getPlayer().getSoundSphere().computeVolumes(player);
 
-					// Checking if volumes has changed enough to notify the client
-					if (checkVolumeChange(before, now)) {
-						entry.setValue(now);
-						changes.add(new VolumeChange(speaker, listener, now));
+					// Computed volumes changed significantly enough to be notified
+					if (playerAsListening.setVolumes(now)) {
+						if (changes == null)
+							changes = new ArrayList<VolumeChange>();
+
+						changes.add(new VolumeChange(listening.getPlayer(), player, now));
 					}
 				}
 			}
 
-			if (!changes.isEmpty())
+			if (changes != null)
 				EventManager.callEvent(new VoxyPlayerVolumesChangedEvent(changes));
+		}
+
+		/**
+		 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
+		 * effect already registered for the given name, then it is updated.
+		 * 
+		 * @param listener The listening player to notify.
+		 * @param effect   The effect to add or update..
+		 */
+		public void addOrUpdateEffectForEachSpeakingPlayer(VoxyPlayerImpl listener, IVoxyEffect effect) {
+			synchronized (lock) {
+				SpeakingPlayer speaking = speakingPlayers.get(listener.getExternal());
+				if (speaking == null)
+					return;
+
+				speaking.addOrUpdateEffectForEachSpeakingPlayer(effect);
+			}
+		}
+
+		/**
+		 * Adds an effect on the audio stream of the speaking player for each listening player. If there is an effect already registered
+		 * for the given name, then it is updated.
+		 * 
+		 * @param speaker The speaking player to notify.
+		 * @param effect  The effect to add or update..
+		 */
+		public void addOrUpdateEffectForEachListeningPlayer(VoxyPlayerImpl speaker, IVoxyEffect effect) {
+			synchronized (lock) {
+				SpeakingPlayer speaking = speakingPlayers.get(speaker.getExternal());
+				if (speaking == null)
+					return;
+
+				speaking.addOrUpdateEffectForEachListeningPlayer(effect);
+			}
+		}
+
+		/**
+		 * Sends a request to the given listener to remove an effect on the audio stream of each player that are in the same room.
+		 * 
+		 * @param listener   The player that shall remove an effect on each audio stream it receives.
+		 * @param effectName The name of the effect to remove.
+		 */
+		public void removeEffectForEachSpeakingPlayer(VoxyPlayerImpl listener, String effectName) {
+			synchronized (lock) {
+				SpeakingPlayer speaking = speakingPlayers.get(listener.getExternal());
+				if (speaking == null)
+					return;
+
+				speaking.removeEffectForEachSpeakingPlayer(effectName);
+			}
+		}
+
+		/**
+		 * Sends a request to each player that are in the same room as the given speaking player to remove an effect on the audio stream
+		 * of speaking player.
+		 * 
+		 * @param speaker    The player for which an effect shall be applied on the audio stream.
+		 * @param effectName The name of the effect to remove.
+		 */
+		public void removeEffectForEachListeningPlayer(VoxyPlayerImpl speaker, String effectName) {
+			synchronized (lock) {
+				SpeakingPlayer speaking = speakingPlayers.get(speaker.getExternal());
+				if (speaking == null)
+					return;
+
+				speaking.removeEffectForEachListeningPlayer(effectName);
+			}
+		}
+	}
+
+	private class ListeningPlayer {
+		private static final double VOLUME_GAP = 0.01;
+		private final VoxyPlayerImpl impl;
+		private ISoundVolumes volumes;
+
+		/**
+		 * Creates a listener based on a player and a volumes.
+		 * 
+		 * @param impl    The player that listens another player.
+		 * @param volumes The volumes (left, right, global) used to listen another player
+		 */
+		public ListeningPlayer(VoxyPlayerImpl impl, ISoundVolumes volumes) {
+			this.impl = impl;
+			this.volumes = volumes;
+		}
+
+		/**
+		 * @return The implementation of the player.
+		 */
+		public VoxyPlayerImpl getPlayerImpl() {
+			return impl;
+		}
+
+		/**
+		 * @return The player that listens
+		 */
+		public IVoxyPlayer getPlayer() {
+			return impl.getExternal();
+		}
+
+		/**
+		 * @return The volumes with which this listener hears another player.
+		 */
+		public ISoundVolumes getVolumes() {
+			return volumes;
+		}
+
+		/**
+		 * Update the volumes (left, right and global) with which this listener hears another player.
+		 * 
+		 * @param volumes The volumes to use.
+		 */
+		public boolean setVolumes(ISoundVolumes volumes) {
+			if (checkVolumeChange(this.volumes, volumes)) {
+				this.volumes = volumes;
+				return true;
+			}
+
+			return false;
 		}
 
 		/**
@@ -290,6 +455,168 @@ public class SoundManager implements IEventListener {
 			double globalDiff = Math.abs(before.getGlobal() - now.getGlobal());
 
 			return leftDiff > VOLUME_GAP || rightDiff > VOLUME_GAP || globalDiff > VOLUME_GAP;
+		}
+	}
+
+	private class SpeakingPlayer {
+		private final VoxyPlayerImpl impl;
+		private final Map<IVoxyPlayer, ListeningPlayer> listeners;
+		private final Map<String, IVoxyEffect> effectsForEachListeners;
+		private final Map<String, IVoxyEffect> effectsForEachSpeakers;
+		private final Object lock;
+
+		/**
+		 * Creates a speaking player.
+		 * 
+		 * @param impl The implementation of the player.
+		 */
+		public SpeakingPlayer(VoxyPlayerImpl impl) {
+			this.impl = impl;
+			listeners = new HashMap<IVoxyPlayer, ListeningPlayer>();
+			effectsForEachListeners = new HashMap<String, IVoxyEffect>();
+			effectsForEachSpeakers = new HashMap<String, IVoxyEffect>();
+			lock = new Object();
+		}
+
+		/**
+		 * @return The implementation of the underlying player.
+		 */
+		public VoxyPlayerImpl getPlayer() {
+			return impl;
+		}
+
+		/**
+		 * Adds the given listener to the list of listeners.
+		 * 
+		 * @param player  The player that listens another player.
+		 * @param volumes The volumes (left, right and global) with which the listeners hears another player.
+		 */
+		public void addListener(VoxyPlayerImpl impl, ISoundVolumes volumes) {
+			Logger.info("Adding %s to %s's listeners list", impl.getName(), getPlayer().getName());
+			synchronized (lock) {
+				if (listeners.get(impl.getExternal()) != null)
+					return;
+
+				listeners.put(impl.getExternal(), new ListeningPlayer(impl, volumes));
+
+				// Notifying the new player how it shall hear this player
+				Logger.info("Iterating over effectsForEachListeners map");
+				for (Map.Entry<String, IVoxyEffect> entry : effectsForEachListeners.entrySet()) {
+					Logger.info("Adding %s on %s audio stream for %s", entry.getKey(), getPlayer().getName(), impl.getName());
+					impl.addOrUpdateEffect(getPlayer(), entry.getValue());
+				}
+
+				// Notifying this player how it shall the new player
+				Logger.info("Iterating over effectsForEachSpeakers map");
+				for (Map.Entry<String, IVoxyEffect> entry : effectsForEachSpeakers.entrySet()) {
+					Logger.info("Adding %s on %s audio stream for %s", entry.getKey(), impl.getName(), getPlayer().getName());
+					getPlayer().addOrUpdateEffect(impl, entry.getValue());
+				}
+			}
+		}
+
+		/**
+		 * Removes each listener registered in the listeners list.
+		 */
+		public void clearListeners() {
+			synchronized (lock) {
+				listeners.clear();
+			}
+		}
+
+		/**
+		 * Removes the listener associated to the given from the list of listeners.
+		 * 
+		 * @param player The player to remove.
+		 */
+		public void removeListener(IVoxyPlayer player) {
+			synchronized (lock) {
+				listeners.remove(player);
+			}
+		}
+
+		/**
+		 * @return A copy of the list of listening player.
+		 */
+		public List<ListeningPlayer> getListeners() {
+			List<ListeningPlayer> list = new ArrayList<ListeningPlayer>();
+			synchronized (lock) {
+				for (Map.Entry<IVoxyPlayer, ListeningPlayer> entry : listeners.entrySet())
+					list.add(entry.getValue());
+			}
+
+			return list;
+		}
+
+		/**
+		 * Gets the listening player object associated to the given player.
+		 * 
+		 * @param player The player whose the listening player shall be retrieved.
+		 * @return The ListeningPlayer object if registered, null otherwise.
+		 */
+		public ListeningPlayer getListener(IVoxyPlayer player) {
+			synchronized (lock) {
+				return listeners.get(player);
+			}
+		}
+
+		/**
+		 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
+		 * effect already registered for the given name, then it is updated.
+		 * 
+		 * @param effect The effect to add or update.
+		 */
+		public void addOrUpdateEffectForEachSpeakingPlayer(IVoxyEffect effect) {
+			synchronized (lock) {
+				for (ListeningPlayer listening : listeners.values())
+					getPlayer().addOrUpdateEffect(listening.getPlayerImpl(), effect);
+
+				effectsForEachSpeakers.put(effect.getName(), effect);
+			}
+		}
+
+		/**
+		 * Adds an effect on the audio stream of the speaking player for each listening player. If there is an effect already registered
+		 * for the given name, then it is updated.
+		 * 
+		 * @param effect The effect to add or update.
+		 */
+		public void addOrUpdateEffectForEachListeningPlayer(IVoxyEffect effect) {
+			synchronized (lock) {
+				for (ListeningPlayer listening : listeners.values())
+					listening.getPlayerImpl().addOrUpdateEffect(getPlayer(), effect);
+
+				effectsForEachListeners.put(effect.getName(), effect);
+			}
+		}
+
+		/**
+		 * Sends a request to the player to remove an effect on the audio stream of each player that are in the same room.
+		 * 
+		 * @param effectName The name of the effect to remove.
+		 */
+		public void removeEffectForEachSpeakingPlayer(String effectName) {
+			synchronized (lock) {
+				for (ListeningPlayer listening : listeners.values())
+					getPlayer().removeEffect(listening.getPlayerImpl(), effectName);
+
+				effectsForEachListeners.remove(effectName);
+			}
+		}
+
+		/**
+		 * Sends a request to each player that are in the same room as the given speaking player to remove an effect on the audio stream
+		 * of speaking player.
+		 * 
+		 * @param effectName The name of the effect to remove.
+		 */
+		public void removeEffectForEachListeningPlayer(String effectName) {
+			synchronized (lock) {
+				for (ListeningPlayer listening : listeners.values())
+					listening.getPlayerImpl().removeEffect(getPlayer(), effectName);
+
+				effectsForEachListeners.remove(effectName);
+			}
 		}
 	}
 }

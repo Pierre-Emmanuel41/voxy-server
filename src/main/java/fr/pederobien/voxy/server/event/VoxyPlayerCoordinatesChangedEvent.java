@@ -4,35 +4,25 @@ import java.util.StringJoiner;
 
 import fr.pederobien.voxy.server.interfaces.IVoxyPlayer;
 
-public class VoxyPlayerCoordinateChangedEvent extends VoxyPlayerEvent {
-	private final boolean position;
-	private final boolean head;
+public class VoxyPlayerCoordinatesChangedEvent extends VoxyPlayerEvent {
+	private final boolean headOnly;
 
 	/**
 	 * Creates an event thrown when the coordinate of a player has changed.
 	 * 
 	 * @param player   The player's whose the coordinates have changed.
-	 * @param position True if the player moved in one of the spatial direction.
-	 * @param head     True if the player moved his head in one of the spatial direction.
+	 * @param position True if the player moved only his head, false if it also moved in space.
 	 */
-	public VoxyPlayerCoordinateChangedEvent(IVoxyPlayer player, boolean position, boolean head) {
+	public VoxyPlayerCoordinatesChangedEvent(IVoxyPlayer player, boolean headOnly) {
 		super(player);
-		this.position = position;
-		this.head = head;
+		this.headOnly = headOnly;
 	}
 
 	/**
 	 * @return True if the player moved in one of the spatial direction.
 	 */
-	public boolean positionChanged() {
-		return position;
-	}
-
-	/**
-	 * @return True if the player moved his head in one of the spatial direction.
-	 */
-	public boolean headMoved() {
-		return head;
+	public boolean headOnly() {
+		return headOnly;
 	}
 
 	@Override

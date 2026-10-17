@@ -10,6 +10,7 @@ import fr.pederobien.voxy.server.event.RenameRoomPostEvent;
 import fr.pederobien.voxy.server.event.RenameRoomPreEvent;
 import fr.pederobien.voxy.server.impl.VoxyRoom;
 import fr.pederobien.voxy.server.interfaces.ISource;
+import fr.pederobien.voxy.server.interfaces.IVoxyEffect;
 import fr.pederobien.voxy.server.interfaces.IVoxyRoom;
 
 public class VoxyRoomImpl extends ServerElement implements IEventListener {
@@ -132,6 +133,49 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	public boolean onServerClosed() {
 		players.removeAll();
 		return vocalServer.close();
+	}
+
+	/**
+	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
+	 * effect already registered for the given name, then it is updated.
+	 * 
+	 * @param listener The listening player to notify.
+	 * @param effect   The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachSpeakingPlayer(VoxyPlayerImpl listener, IVoxyEffect effect) {
+		soundManager.addOrUpdateEffectForEachSpeakingPlayer(listener, effect);
+	}
+
+	/**
+	 * Adds an effect on the audio stream of the speaking player for each listening player. If there is an effect already registered
+	 * for the given name, then it is updated.
+	 * 
+	 * @param speaker The name of the speaking player to notify.
+	 * @param effect  The effect to add or update.
+	 */
+	public void addOrUpdateEffectForEachListeningPlayer(VoxyPlayerImpl speaker, IVoxyEffect effect) {
+		soundManager.addOrUpdateEffectForEachListeningPlayer(speaker, effect);
+	}
+
+	/**
+	 * Sends a request to the given listener to remove an effect on the audio stream of each player that are in the same room.
+	 * 
+	 * @param listener   The player that shall remove an effect on each audio stream it receives.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachSpeakingPlayer(VoxyPlayerImpl listener, String effectName) {
+		soundManager.removeEffectForEachSpeakingPlayer(listener, effectName);
+	}
+
+	/**
+	 * Sends a request to each player that are in the same room as the given speaking player to remove an effect on the audio stream
+	 * of speaking player.
+	 * 
+	 * @param speaker    The player for which an effect shall be applied on the audio stream.
+	 * @param effectName The name of the effect to remove.
+	 */
+	public void removeEffectForEachListeningPlayer(VoxyPlayerImpl speaker, String effectName) {
+		soundManager.removeEffectForEachListeningPlayer(speaker, effectName);
 	}
 
 	@EventHandler

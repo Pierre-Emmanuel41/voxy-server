@@ -1,5 +1,7 @@
 package fr.pederobien.voxy.server.interfaces;
 
+import java.util.List;
+
 public interface IVoxyPlayer extends ISource {
 
 	/**
@@ -73,27 +75,26 @@ public interface IVoxyPlayer extends ISource {
 	ISoundSphere getSoundSphere();
 
 	/**
-	 * Adds an effect on the audio stream of the speaking player.
+	 * Get the list of effects applied on the audio stream of the given player.
 	 * 
-	 * @param speaking The speaking player, ie the audio stream for which an effect shall be added.
-	 * @param index    The index at which the effect shall be added. If the index is greater than the size of the list of effect
-	 * @param effect   The effect to add.
+	 * @param name The name of the player.
+	 * @return The list of name of effects currently applied on the audio stream of the given player.
 	 */
-	void addEffect(IVoxyPlayer speaking, int index, IVoxyEffect effect);
+	List<String> getEffects(String name);
 
 	/**
-	 * Removes an effect, if registered, to apply on the audio stream of a player.
+	 * Check if this player currently apply an effect on the audio stream of another player.
 	 * 
-	 * @param speaking   The speaking player, ie the audio stream for which an effect shall be removed.
-	 * @param effectName The name of the effect to remove.
+	 * @param playerName The name of the player on which an effect is applied or not.
+	 * @param effectName The name of the effect to check.
+	 * @return True if this apply currently applies the effect on the audio stream of the player, false otherwise.
 	 */
-	public void removeEffect(IVoxyPlayer speaking, String effectName);
+	default boolean hasEffect(String playerName, String effectName) {
+		List<String> effects = getEffects(playerName);
+		for (String effect : effects)
+			if (effect.equals(effectName))
+				return true;
 
-	/**
-	 * Updates the parameters of an effect.
-	 * 
-	 * @param speaking The speaking player, ie the audio stream for which an effect shall be updated.
-	 * @param effect   The effect to update.
-	 */
-	public void updateEffect(IVoxyPlayer speaking, IVoxyEffect effect);
+		return false;
+	}
 }
