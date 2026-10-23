@@ -109,6 +109,28 @@ public interface IVoxyServer extends ISource {
 	}
 
 	/**
+	 * Removes all effects currently applied on the audio stream of the speaking player for the given listening player.
+	 * 
+	 * @param listening The player that shall remove all effects.
+	 * @param speaking  The audio stream on which no effect shall be applied.
+	 */
+	void clearEffects(IVoxyPlayer listening, IVoxyPlayer speaking);
+
+	/**
+	 * For each player in each room, removes all effects a player may have for another player.
+	 */
+	default void clearEffectsForAllPlayers() {
+		for (IVoxyRoom room : getRooms().toList()) {
+			List<IVoxyPlayer> players = room.getPlayers().toList();
+
+			for (IVoxyPlayer player1 : players)
+				for (IVoxyPlayer player2 : players)
+					if (player1 != player2)
+						clearEffects(player1, player2);
+		}
+	}
+
+	/**
 	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
 	 * effect already registered for the given name, then it is updated. The server tracks player joining / leaving the room in which
 	 * the player is so that effect are added or removed accordingly.

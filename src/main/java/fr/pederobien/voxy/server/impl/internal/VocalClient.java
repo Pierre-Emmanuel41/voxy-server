@@ -15,6 +15,7 @@ import fr.pederobien.utils.event.Logger;
 import fr.pederobien.voxy.common.impl.VoxyErrors;
 import fr.pederobien.voxy.common.impl.VoxyIdentifiers;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamAddEffectRequest;
+import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamClearEffectsRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamContentRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamRemoveEffectRequest;
 import fr.pederobien.voxy.common.impl.requests.PlayerAudioStreamUpdateEffectRequest;
@@ -25,6 +26,7 @@ import fr.pederobien.voxy.common.impl.requests.PlayerPropertiesRequest;
 import fr.pederobien.voxy.server.event.VoxyEffectAddPostEvent;
 import fr.pederobien.voxy.server.event.VoxyEffectRemovePostEvent;
 import fr.pederobien.voxy.server.event.VoxyEffectUpdatePostEvent;
+import fr.pederobien.voxy.server.event.VoxyEffectsClearPostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerPlaybackChangePostEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent;
 import fr.pederobien.voxy.server.event.VoxyPlayerVolumesChangedEvent.VolumeChange;
@@ -129,7 +131,7 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	/**
 	 * Sends a request to update the parameters of an effect.
 	 * 
-	 * @param speaker The speaking player, the audio stream for which an effect shall be added.
+	 * @param speaker The speaking player, the audio stream for which an effect shall be updated.
 	 * @param effect  The effect to remove.
 	 */
 	public void updateEffect(VoxyPlayerImpl speaker, IVoxyEffect effect) {
@@ -139,6 +141,17 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 		VoxyEffect e = (VoxyEffect) effect;
 		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_UPDATE_EFFECT, new PlayerAudioStreamUpdateEffectRequest(speaker.getName(), e.unwrap()));
 		EventManager.callEvent(new VoxyEffectUpdatePostEvent(effect, speaker.getExternal(), player.getExternal()));
+	}
+
+	/**
+	 * Sends a request to removes all effects currently applied on an audio stream.
+	 * 
+	 * @param speaker The speaking player, the audio stream for which all effects shall be removed.
+	 * @param effects The list of effects that shall be removed. Used for event only.
+	 */
+	public void clearEffects(VoxyPlayerImpl speaker, List<IVoxyEffect> effects) {
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CLEAR_EFFECTS, new PlayerAudioStreamClearEffectsRequest(speaker.getName()));
+		EventManager.callEvent(new VoxyEffectsClearPostEvent(effects, speaker.getExternal(), player.getExternal()));
 	}
 
 	/**

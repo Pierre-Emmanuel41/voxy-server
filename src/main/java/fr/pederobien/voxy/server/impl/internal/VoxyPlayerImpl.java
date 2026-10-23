@@ -326,56 +326,24 @@ public class VoxyPlayerImpl extends ServerElement {
 	}
 
 	/**
-	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
-	 * effect already registered for the given name, then it is updated.
+	 * Sends a request to remove all effects applied on an audio stream.
 	 * 
-	 * @param effect The effect to add or update.
+	 * @param speaking The speaking player, the audio stream for which all effects shall be removed.
 	 */
-	public void addOrUpdateEffectForEachSpeakingPlayer(IVoxyEffect effect) {
-		if (room == null)
+	public void clearEffects(VoxyPlayerImpl speaking) {
+		if (vocalClient == null)
 			return;
 
-		room.addOrUpdateEffectForEachSpeakingPlayer(this, effect);
-	}
+		List<IVoxyEffect> list;
+		synchronized (lock) {
+			list = effects.remove(speaking.getName());
 
-	/**
-	 * Adds an effect on the audio stream of the speaking player for each listening player. If there is an effect already registered
-	 * for the given name, then it is updated.
-	 * 
-	 * @param effect The effect to add or update.
-	 */
-	public void addOrUpdateEffectForEachListeningPlayer(IVoxyEffect effect) {
-		if (room == null)
-			return;
+			// No need to go further , there is no effect registered for the given player
+			if (list == null)
+				return;
+		}
 
-		room.addOrUpdateEffectForEachListeningPlayer(this, effect);
-	}
-
-	/**
-	 * Sends a request to the given listener to remove an effect on the audio stream of each player that are in the same room.
-	 * 
-	 * @param listener   The player that shall remove an effect on each audio stream it receives.
-	 * @param effectName The name of the effect to remove.
-	 */
-	public void removeEffectForEachSpeakingPlayer(String effectName) {
-		if (room == null)
-			return;
-
-		room.removeEffectForEachSpeakingPlayer(this, effectName);
-	}
-
-	/**
-	 * Sends a request to each player that are in the same room as the given speaking player to remove an effect on the audio stream
-	 * of speaking player.
-	 * 
-	 * @param speaker    The player for which an effect shall be applied on the audio stream.
-	 * @param effectName The name of the effect to remove.
-	 */
-	public void removeEffectForEachListeningPlayer(String effectName) {
-		if (room == null)
-			return;
-
-		room.removeEffectForEachListeningPlayer(this, effectName);
+		vocalClient.clearEffects(speaking, list);
 	}
 
 	/**

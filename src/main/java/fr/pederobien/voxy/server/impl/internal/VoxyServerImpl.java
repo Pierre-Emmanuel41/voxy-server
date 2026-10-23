@@ -262,6 +262,24 @@ public class VoxyServerImpl implements IEventListener {
 	}
 
 	/**
+	 * Removes all effects currently applied on the audio stream of the speaking player for the given listening player.
+	 * 
+	 * @param listening The player that shall remove all effects.
+	 * @param speaking  The audio stream on which no effect shall be applied.
+	 */
+	public void clearEffects(IVoxyPlayer listening, IVoxyPlayer speaking) {
+		VoxyPlayerImpl listener = getPlayerImpl(listening);
+		if (listener == null || listener.getRoom() == null)
+			return;
+
+		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
+		if (speaker == null || speaker.getRoom() == null || speaker.getRoom() != listener.getRoom())
+			return;
+
+		listener.clearEffects(speaker);
+	}
+
+	/**
 	 * Adds an effect on the audio stream of each speaking player registered in the same room as the listening player. If there is an
 	 * effect already registered for the given name, then it is updated. The server tracks player joining / leaving the room in which
 	 * the player is so that effect are added or removed accordingly.
@@ -271,10 +289,10 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void addOrUpdateEffectForEachSpeakingPlayer(IVoxyPlayer listening, IVoxyEffect effect) {
 		VoxyPlayerImpl listener = getPlayerImpl(listening);
-		if (listener == null)
+		if (listener == null || listener.getRoom() == null)
 			return;
 
-		listener.addOrUpdateEffectForEachSpeakingPlayer(effect);
+		listener.getRoom().addOrUpdateEffectForEachSpeakingPlayer(listener, effect);
 	}
 
 	/**
@@ -287,10 +305,10 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void addOrUpdateEffectForEachListeningPlayer(IVoxyPlayer speaking, IVoxyEffect effect) {
 		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
-		if (speaker == null)
+		if (speaker == null || speaker.getRoom() == null)
 			return;
 
-		speaker.addOrUpdateEffectForEachListeningPlayer(effect);
+		speaker.getRoom().addOrUpdateEffectForEachListeningPlayer(speaker, effect);
 	}
 
 	/**
@@ -301,10 +319,10 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void removeEffectForEachSpeakingPlayer(IVoxyPlayer listening, String effectName) {
 		VoxyPlayerImpl listener = getPlayerImpl(listening);
-		if (listener == null)
+		if (listener == null || listener.getRoom() == null)
 			return;
 
-		listener.removeEffectForEachSpeakingPlayer(effectName);
+		listener.getRoom().removeEffectForEachSpeakingPlayer(listener, effectName);
 	}
 
 	/**
@@ -315,10 +333,10 @@ public class VoxyServerImpl implements IEventListener {
 	 */
 	public void removeEffectForEachListeningPlayer(IVoxyPlayer speaking, String effectName) {
 		VoxyPlayerImpl speaker = getPlayerImpl(speaking);
-		if (speaker == null)
+		if (speaker == null || speaker.getRoom() == null)
 			return;
 
-		speaker.removeEffectForEachListeningPlayer(effectName);
+		speaker.getRoom().removeEffectForEachListeningPlayer(speaker, effectName);
 	}
 
 	/**

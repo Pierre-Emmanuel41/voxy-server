@@ -194,11 +194,9 @@ public class SoundManager implements IEventListener {
 		 * @param speaker The speaking player.
 		 */
 		public void register(VoxyPlayerImpl speaker) {
-			Logger.info("[HearTable] - %s joined room %s", speaker, players.getRoomImpl().getName());
 			synchronized (lock) {
 				SpeakingPlayer speaking = speakingPlayers.get(speaker.getExternal());
 				if (speaking != null) {
-					Logger.info("[HearTable] - Player already registered");
 					return;
 				}
 
@@ -222,6 +220,7 @@ public class SoundManager implements IEventListener {
 		 */
 		public void unregister(IVoxyPlayer player) {
 			synchronized (lock) {
+
 				// Step 1: Removing the speaking player
 				SpeakingPlayer speaking = speakingPlayers.remove(player);
 				if (speaking == null)
@@ -232,7 +231,7 @@ public class SoundManager implements IEventListener {
 
 				// Step 3: Removing the player from the list of listeners of the other players.
 				for (Map.Entry<IVoxyPlayer, SpeakingPlayer> entry : speakingPlayers.entrySet())
-					entry.getValue().removeListener(player);
+					entry.getValue().removeListener(speaking.getPlayer());
 			}
 		}
 
@@ -492,7 +491,6 @@ public class SoundManager implements IEventListener {
 		 * @param volumes The volumes (left, right and global) with which the listeners hears another player.
 		 */
 		public void addListener(VoxyPlayerImpl impl, ISoundVolumes volumes) {
-			Logger.info("Adding %s to %s's listeners list", impl.getName(), getPlayer().getName());
 			synchronized (lock) {
 				if (listeners.get(impl.getExternal()) != null)
 					return;
@@ -500,18 +498,12 @@ public class SoundManager implements IEventListener {
 				listeners.put(impl.getExternal(), new ListeningPlayer(impl, volumes));
 
 				// Notifying the new player how it shall hear this player
-				Logger.info("Iterating over effectsForEachListeners map");
-				for (Map.Entry<String, IVoxyEffect> entry : effectsForEachListeners.entrySet()) {
-					Logger.info("Adding %s on %s audio stream for %s", entry.getKey(), getPlayer().getName(), impl.getName());
+				for (Map.Entry<String, IVoxyEffect> entry : effectsForEachListeners.entrySet())
 					impl.addOrUpdateEffect(getPlayer(), entry.getValue());
-				}
 
 				// Notifying this player how it shall the new player
-				Logger.info("Iterating over effectsForEachSpeakers map");
-				for (Map.Entry<String, IVoxyEffect> entry : effectsForEachSpeakers.entrySet()) {
-					Logger.info("Adding %s on %s audio stream for %s", entry.getKey(), impl.getName(), getPlayer().getName());
+				for (Map.Entry<String, IVoxyEffect> entry : effectsForEachSpeakers.entrySet())
 					getPlayer().addOrUpdateEffect(impl, entry.getValue());
-				}
 			}
 		}
 
@@ -529,9 +521,12 @@ public class SoundManager implements IEventListener {
 		 * 
 		 * @param player The player to remove.
 		 */
-		public void removeListener(IVoxyPlayer player) {
+		public void removeListener(VoxyPlayerImpl player) {
 			synchronized (lock) {
-				listeners.remove(player);
+				listeners.remove(player.getExternal());
+
+				// Clearing all effect between this player and the removed player
+				getPlayer().clearEffects(player);
 			}
 		}
 

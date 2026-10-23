@@ -91,6 +91,11 @@ public class VoxyServer implements IVoxyServer, IEventListener {
 	}
 
 	@Override
+	public void clearEffects(IVoxyPlayer listening, IVoxyPlayer speaking) {
+		impl.clearEffects(listening, speaking);
+	}
+
+	@Override
 	public void addOrUpdateEffectForEachSpeakingPlayer(IVoxyPlayer listening, IVoxyEffect effect) {
 		impl.addOrUpdateEffectForEachSpeakingPlayer(listening, effect);
 	}
