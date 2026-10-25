@@ -2,6 +2,7 @@ package fr.pederobien.voxy.server.interfaces;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface IVoxyServer extends ISource {
 
@@ -57,12 +58,37 @@ public interface IVoxyServer extends ISource {
 	List<IVoxyPlayer> getPlayers();
 
 	/**
+	 * @return A stream that contains players registered in a room.
+	 */
+	default Stream<IVoxyPlayer> getPlayersInRoom() {
+		return getPlayers().stream().filter(player -> player.getRoom() != null);
+	}
+
+	/**
+	 * @return A stream that contains players not registered in a room.
+	 */
+	default Stream<IVoxyPlayer> getPlayersNotInRoom() {
+		return getPlayers().stream().filter(player -> player.getRoom() == null);
+	}
+
+	/**
 	 * Get a player by its name.
 	 * 
 	 * @param name The name of the player to retrieve
 	 * @return An optional containing the player associated to the given name if registered, an empty optional otherwise.
 	 */
 	Optional<IVoxyPlayer> getPlayerByName(String name);
+
+	/**
+	 * @return The number of player that are in a room.
+	 */
+	default int getNumberOfPlayerInRooms() {
+		int count = 0;
+		for (IVoxyRoom room : getRooms().toList())
+			count += room.getPlayers().size();
+
+		return count;
+	}
 
 	/**
 	 * @return The object that manages effects.
