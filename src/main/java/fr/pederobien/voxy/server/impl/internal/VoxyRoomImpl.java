@@ -119,10 +119,11 @@ public class VoxyRoomImpl extends ServerElement implements IEventListener {
 	 * 
 	 * @param source    The speaking player.
 	 * @param sample    The bytes array that contains the audio sample.
+	 * @param loudness  The energy of the sample.
 	 * @param algorithm The algorithm used to compress the audio sample.
 	 */
-	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, byte algorithm) {
-		soundManager.onPlayerIsSpeaking(source, sample, algorithm);
+	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, float loudness, byte algorithm) {
+		soundManager.onPlayerIsSpeaking(source, sample, loudness, algorithm);
 	}
 
 	/**

@@ -159,10 +159,11 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 	 * 
 	 * @param name      The name of the speaking player.
 	 * @param sample    The bytes array that contains the player's audio stream.
+	 * @param loudness  The energy of the sample.
 	 * @param algorithm The algorithm used to compress the audio stream.
 	 */
-	public void onPlayerSpeaking(String name, byte[] sample, byte algorithm) {
-		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(name, sample, algorithm));
+	public void onPlayerSpeaking(String name, byte[] sample, float loudness, byte algorithm) {
+		send(VoxyIdentifiers.PLAYER_AUDIO_STREAM_CONTENT, new PlayerAudioStreamContentRequest(name, sample, loudness, algorithm));
 	}
 
 	@EventHandler
@@ -290,6 +291,6 @@ public class VocalClient extends ClientWrapper implements IEventListener {
 			return;
 		}
 
-		vocalServer.getRoom().onPlayerIsSpeaking(player, request.getSample(), request.getAlgorithm());
+		vocalServer.getRoom().onPlayerIsSpeaking(player, request.getSample(), request.getLoudness(), request.getAlgorithm());
 	}
 }

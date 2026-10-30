@@ -42,16 +42,17 @@ public class SoundManager implements IEventListener {
 	 * 
 	 * @param source    The speaking player.
 	 * @param sample    The bytes array that contains the audio sample.
+	 * @param loudness  The energy of the sample.
 	 * @param algorithm The algorithm used to compress the audio sample.
 	 */
-	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, byte algorithm) {
+	public void onPlayerIsSpeaking(VoxyPlayerImpl source, byte[] sample, float loudness, byte algorithm) {
 		List<VoxyPlayerImpl> listeners = players.filter(player -> filter(source, player));
 
 		for (VoxyPlayerImpl listener : listeners)
-			listener.getVocalClient().onPlayerSpeaking(source.getName(), sample, algorithm);
+			listener.getVocalClient().onPlayerSpeaking(source.getName(), sample, loudness, algorithm);
 
 		// Notifying that a player is speaking
-		EventManager.callEvent(new VoxyPlayerSpeakingEvent(source.getExternal()));
+		EventManager.callEvent(new VoxyPlayerSpeakingEvent(source.getExternal(), loudness));
 	}
 
 	/**
